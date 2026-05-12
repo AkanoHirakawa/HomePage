@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>储物间 | Akano 赤野</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .storage-header {
+            text-align: center;
+            padding: 160px 40px 60px;
+        }
+        .storage-header h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--white), var(--orange-primary), var(--orange-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .storage-header p {
+            color: var(--white-secondary);
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            padding: 0 40px 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .file-card {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 24px;
+            border-radius: 18px;
+            backdrop-filter: var(--blur-20);
+            -webkit-backdrop-filter: var(--blur-20);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--white);
+            cursor: pointer;
+        }
+        .file-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--orange-primary);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.15);
+        }
+        .file-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: rgba(255, 107, 53, 0.15);
+        }
+        .file-info h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .file-info span {
+            font-size: 0.8rem;
+            color: var(--white-tertiary);
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-top: 4px;
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--orange-secondary);
+        }
+        .upload-section {
+            text-align: center;
+            padding: 20px 40px 80px;
+            color: var(--white-tertiary);
+            font-size: 0.9rem;
+        }
+        .upload-section a {
+            color: var(--orange-primary);
+        }
+        @media (max-width: 768px) {
+            .storage-header { padding: 120px 20px 40px; }
+            .file-grid { padding: 0 20px 60px; grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loading-text">开锁中...</div>
+    </div>
+
+    <div class="starfield" id="starfield"></div>
+
+    <nav class="navbar">
+        <div class="logo">储物间</div>
+        <ul class="nav-links" style="display:flex">
+            <li><a href="../index.html" class="nav-link">← 返回主页</a></li>
+        </ul>
+    </nav>
+
+    <div class="storage-header">
+        <h1>我的储物间</h1>
+        <p>文件、笔记、资源，都在这里</p>
+    </div>
+
+    <div class="file-grid" id="fileGrid"></div>
+
+    <div class="upload-section">
+        <p>💡 添加文件：将文件放进 <code>storage/</code> 文件夹，编辑此页面的 <code>fileList</code> 数组</p>
+        <p>或直接 <a href="https://github.com/AkanoHirakawa/HomePage/edit/main/storage/index.html" target="_blank">在 GitHub 上编辑</a></p>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+    var fileList = [
+        {
+            name: '示例文件.pdf',
+            desc: '这是一个示例文件说明',
+            type: 'pdf',
+            path: 'files/example.pdf',
+            tag: '文档'
+        },
+        {
+            name: '示例图片.png',
+            desc: '图片预览说明文字',
+            type: 'image',
+            path: 'files/example.png',
+            tag: '图片'
+        }
+    ];
+
+    var typeIcons = {
+        pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
+        ppt: '📽️', pptx: '📽️', txt: '📃', md: '📋',
+        image: '🖼️', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️',
+        zip: '📦', rar: '📦', '7z': '📦',
+        mp4: '🎬', avi: '🎬', mov: '🎬',
+        mp3: '🎵', wav: '🎵', flac: '🎵',
+        exe: '⚙️', apk: '📱',
+        link: '🔗', folder: '📁', other: '📎'
+    };
+
+    function renderFiles() {
+        var grid = document.getElementById('fileGrid');
+        fileList.forEach(function (f) {
+            var card = document.createElement('a');
+            card.className = 'file-card';
+            card.href = f.path;
+            card.target = '_blank';
+            var icon = typeIcons[f.type] || typeIcons.other;
+            card.innerHTML =
+                '<div class="file-icon">' + icon + '</div>' +
+                '<div class="file-info">' +
+                    '<h3>' + f.name + '</h3>' +
+                    '<span>' + f.desc + '</span>' +
+                    (f.tag ? '<br><span class="tag">' + f.tag + '</span>' : '') +
+                '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    window.addEventListener('load', function () {
+        renderFiles();
+        setTimeout(function () {
+            document.getElementById('loading').classList.add('fade-out');
+        }, 800);
+    });
+    </script>
+</body>
+</html>
