@@ -117,54 +117,97 @@
     <div class="file-grid" id="fileGrid"></div>
 
     <div class="upload-section">
-        <p>💡 添加文件：将文件放进 <code>storage/</code> 文件夹，编辑此页面的 <code>fileList</code> 数组</p>
-        <p>或直接 <a href="https://github.com/AkanoHirakawa/HomePage/edit/main/storage/index.html" target="_blank">在 GitHub 上编辑</a></p>
+        <p>💡 把文件放进 <code>storage/files/</code> 文件夹 → push 到 GitHub → 自动显示在这里</p>
     </div>
 
     <script src="../script.js"></script>
     <script>
-    var fileList = [
-        {
-            name: 'SCH_Schematic1_2026-04-22.pdf',
-            desc: '电路原理图',
-            type: 'pdf',
-            path: 'files/SCH_Schematic1_2026-04-22.pdf',
-            tag: '电路设计'
-        }
-    ];
-
-    var typeIcons = {
-        pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
-        ppt: '📽️', pptx: '📽️', txt: '📃', md: '📋',
-        image: '🖼️', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️',
-        zip: '📦', rar: '📦', '7z': '📦',
-        mp4: '🎬', avi: '🎬', mov: '🎬',
-        mp3: '🎵', wav: '🎵', flac: '🎵',
-        exe: '⚙️', apk: '📱',
-        link: '🔗', folder: '📁', other: '📎'
+    var TYPE_MAP = {
+        pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', csv: '📊',
+        ppt: '📽️', pptx: '📽️', txt: '📃', md: '📋', json: '📋', xml: '📋',
+        png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️', webp: '🖼️', bmp: '🖼️',
+        zip: '📦', rar: '📦', '7z': '📦', tar: '📦', gz: '📦',
+        mp4: '🎬', avi: '🎬', mov: '🎬', mkv: '🎬', flv: '🎬',
+        mp3: '🎵', wav: '🎵', flac: '🎵', aac: '🎵', ogg: '🎵',
+        html: '🌐', css: '🎨', js: '📜', py: '🐍', cpp: '⚡', c: '⚡', java: '☕',
+        exe: '⚙️', msi: '⚙️', apk: '📱', iso: '💿',
+        psd: '🎨', ai: '🎨', dwg: '📐', stl: '📐',
+        sch: '🔌', pcb: '🔌',
+        other: '📎'
     };
 
-    function renderFiles() {
+    function getIcon(filename) {
+        var ext = filename.split('.').pop().toLowerCase();
+        return TYPE_MAP[ext] || TYPE_MAP.other;
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function renderFiles(files) {
         var grid = document.getElementById('fileGrid');
-        fileList.forEach(function (f) {
+        grid.innerHTML = '';
+        if (files.length === 0) {
+            grid.innerHTML = '<p style="text-align:center;color:var(--white-tertiary);grid-column:1/-1;padding:60px">📭 储物间是空的，把文件放进 storage/files/ 文件夹</p>';
+            return;
+        }
+        files.forEach(function (f) {
+            var name = f.name;
+            var downloadUrl = f.download_url || f.path;
+            var size = f.size ? formatSize(f.size) : '';
+            var icon = getIcon(name);
+            var ext = name.split('.').pop().toUpperCase();
             var card = document.createElement('a');
             card.className = 'file-card';
-            card.href = f.path;
+            card.href = downloadUrl;
             card.target = '_blank';
-            var icon = typeIcons[f.type] || typeIcons.other;
             card.innerHTML =
                 '<div class="file-icon">' + icon + '</div>' +
                 '<div class="file-info">' +
-                    '<h3>' + f.name + '</h3>' +
-                    '<span>' + f.desc + '</span>' +
-                    (f.tag ? '<br><span class="tag">' + f.tag + '</span>' : '') +
+                    '<h3>' + name + '</h3>' +
+                    '<span>' + ext + ' 文件' + (size ? '  ·  ' + size : '') + '</span>' +
                 '</div>';
             grid.appendChild(card);
         });
     }
 
+    function fallbackLoad() {
+        var manualList = [
+            {
+                name: 'SCH_Schematic1_2026-04-22.pdf',
+                path: 'files/SCH_Schematic1_2026-04-22.pdf',
+                size: null
+            }
+        ];
+        renderFiles(manualList);
+    }
+
     window.addEventListener('load', function () {
-        renderFiles();
+        var apiUrl = 'https://api.github.com/repos/AkanoHirakawa/HomePage/contents/storage/files';
+        fetch(apiUrl)
+            .then(function (res) {
+                if (!res.ok) throw new Error('API failed');
+                return res.json();
+            })
+            .then(function (data) {
+                var files = [];
+                data.forEach(function (item) {
+                    if (item.name === '.gitkeep') return;
+                    files.push({
+                        name: item.name,
+                        download_url: item.download_url,
+                        path: item.path,
+                        size: item.size
+                    });
+                });
+                renderFiles(files);
+            })
+            .catch(function () {
+                fallbackLoad();
+            });
         setTimeout(function () {
             document.getElementById('loading').classList.add('fade-out');
         }, 800);
