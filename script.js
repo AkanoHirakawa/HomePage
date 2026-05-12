@@ -65,17 +65,70 @@ function updateLunarDate(date) {
     document.getElementById('lunarDate').textContent = lunarYear + lunarDates[index];
 }
 
+function getWeatherCodeInfo(code) {
+    const map = {
+        0:  { icon: '☀️', text: '晴朗' },
+        1:  { icon: '🌤️', text: '少云' },
+        2:  { icon: '⛅', text: '多云' },
+        3:  { icon: '☁️', text: '阴天' },
+        45: { icon: '🌫️', text: '雾' },
+        48: { icon: '🌫️', text: '雾凇' },
+        51: { icon: '🌦️', text: '小毛毛雨' },
+        53: { icon: '🌦️', text: '毛毛雨' },
+        55: { icon: '🌦️', text: '大毛毛雨' },
+        56: { icon: '🌧️', text: '冻毛毛雨' },
+        57: { icon: '🌧️', text: '大冻毛毛雨' },
+        61: { icon: '🌧️', text: '小雨' },
+        63: { icon: '🌧️', text: '中雨' },
+        65: { icon: '🌧️', text: '大雨' },
+        66: { icon: '🌧️', text: '冻雨' },
+        67: { icon: '🌧️', text: '大冻雨' },
+        71: { icon: '❄️', text: '小雪' },
+        73: { icon: '❄️', text: '中雪' },
+        75: { icon: '❄️', text: '大雪' },
+        77: { icon: '🌨️', text: '雪粒' },
+        80: { icon: '🌦️', text: '阵雨' },
+        81: { icon: '🌦️', text: '大阵雨' },
+        82: { icon: '🌦️', text: '暴阵雨' },
+        85: { icon: '🌨️', text: '阵雪' },
+        86: { icon: '🌨️', text: '大阵雪' },
+        95: { icon: '⛈️', text: '雷暴' },
+        96: { icon: '⛈️', text: '雷暴冰雹' },
+        99: { icon: '⛈️', text: '大冰雹雷暴' }
+    };
+    return map[code] || { icon: '🌡️', text: '未知' };
+}
+
 function getWeather() {
-    const weatherConditions = [
-        { icon: "☀️", text: "晴朗 22°C" },
-        { icon: "⛅", text: "多云 18°C" },
-        { icon: "🌧️", text: "小雨 15°C" },
-        { icon: "❄️", text: "雪天 -2°C" },
-        { icon: "🌤️", text: "晴转多云 20°C" }
-    ];
-    const randomWeather = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
-    document.getElementById('weatherIcon').textContent = randomWeather.icon;
-    document.getElementById('weatherInfo').textContent = randomWeather.text;
+    var lat = 23.1291;
+    var lon = 113.2644;
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function (pos) { fetchWeather(pos.coords.latitude, pos.coords.longitude); },
+            function () { fetchWeather(lat, lon); },
+            { timeout: 3000, maximumAge: 600000 }
+        );
+    } else {
+        fetchWeather(lat, lon);
+    }
+}
+
+function fetchWeather(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Shanghai`;
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const current = data.current;
+            const temp = Math.round(current.temperature_2m);
+            const code = current.weather_code;
+            const info = getWeatherCodeInfo(code);
+            document.getElementById('weatherIcon').textContent = info.icon;
+            document.getElementById('weatherInfo').textContent = `${info.text} ${temp}°C`;
+        })
+        .catch(() => {
+            document.getElementById('weatherIcon').textContent = '🌡️';
+            document.getElementById('weatherInfo').textContent = '获取天气失败';
+        });
 }
 
 function setupScrollAnimations() {
