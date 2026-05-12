@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日记 | Akano 赤野</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .diary-wrap {
+            max-width: 800px; margin: 0 auto; padding: 140px 24px 40px;
+        }
+        .diary-toolbar {
+            display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .diary-toolbar input {
+            flex: 1; min-width: 180px; padding: 12px 18px; border-radius: 14px;
+            border: 1px solid var(--glass-border); background: var(--glass-bg);
+            color: var(--white); font-size: 0.95rem; outline: none;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            transition: border-color 0.3s;
+        }
+        .diary-toolbar input:focus { border-color: var(--orange-primary); }
+        .diary-toolbar input::placeholder { color: var(--white-tertiary); }
+        .diary-btn {
+            padding: 12px 24px; border-radius: 14px; border: 1px solid var(--glass-border);
+            background: var(--glass-bg); color: var(--white); font-size: 0.95rem;
+            cursor: pointer; transition: all 0.3s; white-space: nowrap;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .diary-btn:hover { border-color: var(--orange-primary); background: rgba(255,107,53,0.1); }
+        .diary-btn.primary {
+            background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
+            border: none; font-weight: 600;
+        }
+        .diary-btn.primary:hover { opacity: 0.85; }
+        .diary-list { display: flex; flex-direction: column; gap: 10px; min-height: 300px; }
+        .diary-card {
+            display: flex; align-items: center; gap: 18px; padding: 18px 24px;
+            border-radius: 16px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            cursor: pointer; transition: all 0.3s; position: relative;
+        }
+        .diary-card:hover { border-color: var(--orange-primary); transform: translateX(4px); }
+        .diary-date-box { display: flex; flex-direction: column; align-items: center;
+            flex-shrink: 0; width: 52px; line-height: 1; }
+        .diary-date-box .month { font-size: 1.8rem; font-weight: 800; color: var(--orange-primary); }
+        .diary-date-box .day   { font-size: 1.2rem; font-weight: 500; color: var(--white); }
+        .diary-card-title { flex: 1; font-size: 1rem; color: var(--white-secondary);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .diary-card-meta { font-size: 0.75rem; color: var(--white-tertiary); flex-shrink: 0; }
+        .diary-card-delete {
+            display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: rgba(200,50,50,0.2); border: 1px solid rgba(200,50,50,0.3); color:#f66;
+            padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+        }
+        .diary-card:hover .diary-card-delete { display: block; }
+        .diary-card-delete:hover { background: rgba(200,50,50,0.4); }
+
+        .diary-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20001; background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .diary-modal.open { display: flex; }
+        .diary-editor {
+            background: rgba(20,20,20,0.92); border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 36px; max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto;
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+        }
+        .diary-editor h2 { font-size: 1.3rem; margin-bottom: 20px; }
+        .diary-editor label { display: block; font-size: 0.85rem; color: var(--white-tertiary);
+            margin-bottom: 6px; margin-top: 16px; }
+        .diary-editor input, .diary-editor textarea {
+            width: 100%; padding: 12px 16px; border-radius: 12px;
+            border: 1px solid var(--glass-border); background: var(--glass-bg);
+            color: var(--white); font-size: 0.95rem; outline: none; resize: vertical;
+            transition: border-color 0.3s;
+        }
+        .diary-editor input:focus, .diary-editor textarea:focus { border-color: var(--orange-primary); }
+        .diary-editor textarea { min-height: 200px; font-family: inherit; }
+        .diary-editor .auto-info { font-size: 0.8rem; color: var(--white-tertiary); margin: 8px 0; }
+        .diary-editor .btn-row { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
+        .diary-pager { display: flex; justify-content: center; align-items: center; gap: 16px;
+            margin-top: 32px; padding-bottom: 40px; }
+        .diary-pager span { color: var(--white-secondary); font-size: 0.9rem; }
+
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 30000; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: rgba(20,20,20,0.85); border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 44px; text-align: center; min-width: 340px;
+            backdrop-filter: blur(30px);
+        }
+        .login-card h2 { font-size: 1.5rem; margin-bottom: 22px; }
+        .login-card input {
+            width: 100%; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;
+            border: 1px solid var(--glass-border); background: var(--glass-bg);
+            color: var(--white); font-size: 0.95rem; outline: none;
+        }
+        .login-card input:focus { border-color: var(--orange-primary); }
+        .login-card .login-btn {
+            width: 100%; padding: 14px; border-radius: 14px; border: none; margin-top: 8px;
+            background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
+            color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
+        }
+        .login-card .login-error { color: #f66; font-size: 0.8rem; margin-top: 8px; min-height: 20px; }
+
+        .empty-hint { text-align: center; color: var(--white-tertiary); padding: 80px 20px; font-size: 0.95rem; }
+        .highlight-match { color: var(--orange-primary); font-weight: 600; }
+        @media (max-width: 768px) {
+            .diary-wrap { padding: 120px 16px 30px; }
+            .diary-card { padding: 14px 16px; }
+            .diary-date-box .month { font-size: 1.4rem; }
+            .diary-date-box .day { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading"><div class="loading-text">翻开日记本...</div></div>
+    <div class="starfield" id="starfield"></div>
+    <div class="nebula"></div>
+    <canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+    <nav class="navbar">
+        <div class="logo">日记</div>
+        <ul class="nav-links" style="display:flex">
+            <li><a href="../index.html" class="nav-link">返回主页</a></li>
+        </ul>
+    </nav>
+    <div class="diary-wrap" id="diaryWrap">
+        <div class="diary-toolbar">
+            <input type="text" id="searchInput" placeholder="搜索日记关键词..." />
+            <button class="diary-btn primary" id="addBtn">写日记</button>
+        </div>
+        <div class="diary-list" id="diaryList"></div>
+        <div class="diary-pager" id="diaryPager"></div>
+    </div>
+
+    <div class="diary-modal" id="diaryModal">
+        <div class="diary-editor">
+            <h2 id="editorTitle">写日记</h2>
+            <label>标题</label>
+            <input type="text" id="editTitle" placeholder="日记标题" maxlength="60" />
+            <div class="auto-info" id="autoInfo"></div>
+            <label>内容</label>
+            <textarea id="editContent" placeholder="今天发生了什么..."></textarea>
+            <div class="btn-row">
+                <button class="diary-btn" id="cancelEdit">取消</button>
+                <button class="diary-btn primary" id="saveEdit">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase.js"></script>
+    <script src="../script.js"></script>
+    <script>
+    if (!isLogged()) {
+        window.location.href = '../index.html';
+    }
+
+    var DIARY_KEY = 'akano_diaries';
+
+    var searchInput = document.getElementById('searchInput');
+    var diaryList = document.getElementById('diaryList');
+    var diaryPager = document.getElementById('diaryPager');
+    var diaryModal = document.getElementById('diaryModal');
+    var editTitle = document.getElementById('editTitle');
+    var editContent = document.getElementById('editContent');
+    var autoInfo = document.getElementById('autoInfo');
+    var addBtn = document.getElementById('addBtn');
+    var cancelEdit = document.getElementById('cancelEdit');
+    var saveEdit = document.getElementById('saveEdit');
+    var editorTitle = document.getElementById('editorTitle');
+
+    function loadDiaries() {
+        var raw = localStorage.getItem(DIARY_KEY);
+        allDiaries = raw ? JSON.parse(raw) : [];
+        allDiaries.sort(function (a, b) { return b.ts - a.ts; });
+    }
+
+    function saveDiaries() {
+        localStorage.setItem(DIARY_KEY, JSON.stringify(allDiaries));
+    }
+
+    function getWeatherText(callback) {
+        var host = 'https://nf5vxp5t6b.re.qweatherapi.com';
+        var key = 'a4e3f58fac344d79b967f350a89365aa';
+        var url = host + '/v7/weather/now?location=113.26,23.13&key=' + key;
+        fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+            if (d.code === '200') callback(d.now.text + ' ' + d.now.temp + 'C');
+            else callback('未知天气');
+        }).catch(function () { callback('未知天气'); });
+    }
+
+    function formatDate(ts) {
+        var d = new Date(ts);
+        return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit' });
+    }
+
+    function render() {
+        var keyword = searchInput.value.trim().toLowerCase();
+        var filtered = allDiaries.filter(function (d) {
+            return !keyword || d.title.toLowerCase().indexOf(keyword) >= 0 ||
+                d.content.toLowerCase().indexOf(keyword) >= 0;
+        });
+        var total = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+        if (currentPage > total) currentPage = total;
+        var start = (currentPage - 1) * PAGE_SIZE;
+        var pageItems = filtered.slice(start, start + PAGE_SIZE);
+        diaryList.innerHTML = '';
+        if (pageItems.length === 0) {
+            diaryList.innerHTML = '<div class="empty-hint">还没有日记，点击"写日记"开始记录</div>';
+        }
+        pageItems.forEach(function (d) {
+            var card = document.createElement('div');
+            card.className = 'diary-card';
+            var date = new Date(d.ts);
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            card.innerHTML =
+                '<div class="diary-date-box"><span class="month">' + month + '</span><span class="day">' + day + '</span></div>' +
+                '<span class="diary-card-title">' + d.title + '</span>' +
+                '<span class="diary-card-meta">' + (d.time || '') + '</span>' +
+                '<button class="diary-card-delete">删除</button>';
+            card.querySelector('.diary-card-delete').addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (confirm('确认删除这篇日记？')) {
+                    allDiaries = allDiaries.filter(function (x) { return x.id !== d.id; });
+                    saveDiaries();
+                    loadDiaries();
+                    render();
+                }
+            });
+            card.addEventListener('click', function (e) {
+                if (e.target.className === 'diary-card-delete') return;
+                openEditor(d);
+            });
+            diaryList.appendChild(card);
+        });
+        var html = '';
+        html += '<button class="diary-btn" ' + (currentPage <= 1 ? 'disabled' : '') + ' id="prevPage">上一页</button>';
+        html += '<span>' + currentPage + ' / ' + total + '</span>';
+        html += '<button class="diary-btn" ' + (currentPage >= total ? 'disabled' : '') + ' id="nextPage">下一页</button>';
+        diaryPager.innerHTML = html;
+        var prevBtn = document.getElementById('prevPage');
+        var nextBtn = document.getElementById('nextPage');
+        if (prevBtn) prevBtn.addEventListener('click', function () { if (currentPage > 1) { currentPage--; render(); window.scrollTo(0, 0); } });
+        if (nextBtn) nextBtn.addEventListener('click', function () { if (currentPage < total) { currentPage++; render(); window.scrollTo(0, 0); } });
+    }
+
+    function openEditor(diary) {
+        editingId = diary ? diary.id : null;
+        editorTitle.textContent = diary ? '编辑日记' : '写日记';
+        editTitle.value = diary ? diary.title : '';
+        editContent.value = diary ? diary.content : '';
+        var now = new Date();
+        var timeStr = now.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit' });
+        if (diary) {
+            autoInfo.textContent = '创建于 ' + formatDate(diary.ts) + ' | ' + (diary.weather || '');
+        } else {
+            autoInfo.textContent = '时间: ' + timeStr + ' | 天气: 获取中...';
+            getWeatherText(function (w) { autoInfo.textContent = '时间: ' + timeStr + ' | 天气: ' + w; });
+        }
+        diaryModal.classList.add('open');
+        editTitle.focus();
+    }
+
+    function closeEditor() {
+        diaryModal.classList.remove('open');
+        editingId = null;
+        editTitle.value = '';
+        editContent.value = '';
+    }
+
+    saveEdit.addEventListener('click', function () {
+        var title = editTitle.value.trim();
+        var content = editContent.value.trim();
+        if (!title) { alert('请输入标题'); return; }
+        if (!content) { alert('请输入内容'); return; }
+        var weatherText = '';
+        var match = autoInfo.textContent.match(/天气:\s*(.+)/);
+        if (match) weatherText = match[1];
+        var now = new Date();
+        var timeStr = now.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit' });
+        if (editingId) {
+            for (var i = 0; i < allDiaries.length; i++) {
+                if (allDiaries[i].id === editingId) {
+                    allDiaries[i].title = title;
+                    allDiaries[i].content = content;
+                    allDiaries[i].weather = weatherText;
+                    break;
+                }
+            }
+        } else {
+            allDiaries.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                title: title, content: content,
+                time: timeStr, weather: weatherText,
+                ts: Date.now()
+            });
+        }
+        saveDiaries();
+        loadDiaries();
+        currentPage = 1;
+        render();
+        closeEditor();
+    });
+
+    cancelEdit.addEventListener('click', closeEditor);
+    diaryModal.addEventListener('click', function (e) { if (e.target === diaryModal) closeEditor(); });
+
+    addBtn.addEventListener('click', function () { openEditor(null); });
+
+    searchInput.addEventListener('input', function () { currentPage = 1; render(); });
+
+    loadDiaries();
+    render();
+
+    setTimeout(function () { document.getElementById('loading').classList.add('fade-out'); }, 600);
+    </script>
+</body>
+</html>

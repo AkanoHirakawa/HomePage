@@ -93,9 +93,40 @@
             .storage-header { padding: 120px 20px 40px; }
             .file-grid { padding: 0 20px 60px; grid-template-columns: 1fr; }
         }
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20000; display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: rgba(20, 20, 20, 0.85);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 44px 40px;
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            text-align: center; min-width: 340px;
+        }
+        .login-card h2 { font-size: 1.4rem; margin-bottom: 12px; }
+        .login-card p { color: var(--white-tertiary); font-size: 0.9rem; margin-bottom: 24px; }
+        .login-card a {
+            display: inline-block; padding: 14px 36px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
+            color: #fff; text-decoration: none; font-weight: 600;
+        }
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 24px; min-width: auto; width: 90%; }
+        }
     </style>
 </head>
 <body>
+    <div class="login-overlay" id="authGate">
+        <div class="login-card">
+            <h2>请先登录</h2>
+            <p>访问储物间需要登录账户</p>
+            <a href="../index.html">返回主页登录</a>
+        </div>
+    </div>
     <div class="loading" id="loading">
         <div class="loading-text">开锁中...</div>
     </div>
@@ -107,7 +138,7 @@
     <nav class="navbar">
         <div class="logo">储物间</div>
         <ul class="nav-links" style="display:flex">
-            <li><a href="../index.html" class="nav-link">← 返回主页</a></li>
+            <li><a href="../index.html" class="nav-link">返回主页</a></li>
         </ul>
     </nav>
 
@@ -119,23 +150,32 @@
     <div class="file-grid" id="fileGrid"></div>
 
     <div class="upload-section">
-        <p>💡 把文件放进 <code>storage/files/</code> 文件夹 → push 到 GitHub → 自动显示在这里</p>
+        <p>把文件放进 <code>storage/files/</code> 文件夹 -> push 到 GitHub -> 自动显示在这里</p>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase.js"></script>
     <script src="../script.js"></script>
     <script>
+    if (!isLogged()) {
+        document.getElementById('authGate').classList.remove('hidden');
+    } else {
+        document.getElementById('authGate').classList.add('hidden');
+    }
+    </script>
+    <script>
     var TYPE_MAP = {
-        pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', csv: '📊',
-        ppt: '📽️', pptx: '📽️', txt: '📃', md: '📋', json: '📋', xml: '📋',
-        png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️', webp: '🖼️', bmp: '🖼️',
-        zip: '📦', rar: '📦', '7z': '📦', tar: '📦', gz: '📦',
-        mp4: '🎬', avi: '🎬', mov: '🎬', mkv: '🎬', flv: '🎬',
-        mp3: '🎵', wav: '🎵', flac: '🎵', aac: '🎵', ogg: '🎵',
-        html: '🌐', css: '🎨', js: '📜', py: '🐍', cpp: '⚡', c: '⚡', java: '☕',
-        exe: '⚙️', msi: '⚙️', apk: '📱', iso: '💿',
-        psd: '🎨', ai: '🎨', dwg: '📐', stl: '📐',
-        sch: '🔌', pcb: '🔌',
-        other: '📎'
+        pdf: 'PDF', doc: 'DOC', docx: 'DOCX', xls: 'XLS', xlsx: 'XLSX', csv: 'CSV',
+        ppt: 'PPT', pptx: 'PPTX', txt: 'TXT', md: 'MD', json: 'JSON', xml: 'XML',
+        png: 'PNG', jpg: 'JPG', jpeg: 'JPG', gif: 'GIF', svg: 'SVG', webp: 'WEBP', bmp: 'BMP',
+        zip: 'ZIP', rar: 'RAR', '7z': '7Z', tar: 'TAR', gz: 'GZ',
+        mp4: 'MP4', avi: 'AVI', mov: 'MOV', mkv: 'MKV', flv: 'FLV',
+        mp3: 'MP3', wav: 'WAV', flac: 'FLAC', aac: 'AAC', ogg: 'OGG',
+        html: 'HTML', css: 'CSS', js: 'JS', py: 'PY', cpp: 'C++', c: 'C', java: 'JAVA',
+        exe: 'EXE', msi: 'MSI', apk: 'APK', iso: 'ISO',
+        psd: 'PSD', ai: 'AI', dwg: 'DWG', stl: 'STL',
+        sch: 'SCH', pcb: 'PCB',
+        other: '文件'
     };
 
     function getIcon(filename) {
@@ -153,21 +193,21 @@
         var grid = document.getElementById('fileGrid');
         grid.innerHTML = '';
         if (files.length === 0) {
-            grid.innerHTML = '<p style="text-align:center;color:var(--white-tertiary);grid-column:1/-1;padding:60px">📭 储物间是空的，把文件放进 storage/files/ 文件夹</p>';
+            grid.innerHTML = '<p style="text-align:center;color:var(--white-tertiary);grid-column:1/-1;padding:60px">储物间是空的，把文件放进 storage/files/ 文件夹</p>';
             return;
         }
         files.forEach(function (f) {
             var name = f.name;
             var downloadUrl = f.download_url || f.path;
             var size = f.size ? formatSize(f.size) : '';
-            var icon = getIcon(name);
+            var label = getIcon(name);
             var ext = name.split('.').pop().toUpperCase();
             var card = document.createElement('a');
             card.className = 'file-card';
             card.href = downloadUrl;
             card.target = '_blank';
             card.innerHTML =
-                '<div class="file-icon">' + icon + '</div>' +
+                '<div class="file-icon">' + label + '</div>' +
                 '<div class="file-info">' +
                     '<h3>' + name + '</h3>' +
                     '<span>' + ext + ' 文件' + (size ? '  ·  ' + size : '') + '</span>' +
@@ -178,11 +218,7 @@
 
     function fallbackLoad() {
         var manualList = [
-            {
-                name: 'SCH_Schematic1_2026-04-22.pdf',
-                path: 'files/SCH_Schematic1_2026-04-22.pdf',
-                size: null
-            }
+            { name: 'SCH_Schematic1_2026-04-22.pdf', path: 'files/SCH_Schematic1_2026-04-22.pdf', size: null }
         ];
         renderFiles(manualList);
     }

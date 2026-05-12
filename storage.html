@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资料站 | Akano 赤野</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<style>
+.storage-page { max-width: 900px; margin: 0 auto; padding: 140px 24px 60px; }
+.storage-toolbar { display: flex; gap: 12px; margin-bottom: 28px; align-items: center; }
+.storage-toolbar label { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 14px;
+    border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--white); cursor: pointer;
+    transition: 0.3s; backdrop-filter: blur(20px); white-space: nowrap; font-size: 0.9rem; }
+.storage-toolbar label:hover { border-color: var(--orange-primary); }
+.storage-toolbar input[type=file] { display: none; }
+.storage-toolbar .toggle-row { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--white-tertiary); }
+.storage-toolbar .toggle-row input[type=checkbox] { accent-color: var(--orange-primary); }
+.storage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.storage-card { padding: 20px; border-radius: 16px; backdrop-filter: blur(20px); background: var(--glass-bg);
+    border: 1px solid var(--glass-border); transition: 0.3s; position: relative; }
+.storage-card:hover { border-color: var(--orange-primary); }
+.storage-card .file-icon { font-size: 2rem; margin-bottom: 10px; }
+.storage-card .file-name { font-size: 0.9rem; color: var(--white); font-weight: 500; word-break: break-all; margin-bottom: 6px; }
+.storage-card .file-info { font-size: 0.75rem; color: var(--white-tertiary); display: flex; gap: 10px; align-items: center; }
+.storage-card .file-actions { display: flex; gap: 8px; margin-top: 10px; }
+.storage-card .file-actions button { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--glass-border);
+    background: var(--glass-bg); color: var(--white); font-size: 0.8rem; cursor: pointer; transition: 0.3s; }
+.storage-card .file-actions button:hover { border-color: var(--orange-primary); }
+.storage-card .file-actions .del-btn { border-color: rgba(200,60,60,0.3); color: #f66; }
+.storage-card .file-actions .del-btn:hover { background: rgba(200,60,60,0.2); }
+.storage-card .public-badge { position: absolute; top: 12px; right: 12px; font-size: 0.7rem; padding: 2px 8px;
+    border-radius: 6px; background: rgba(255,107,53,0.2); color: var(--orange-primary); }
+.storage-empty { text-align: center; color: var(--white-tertiary); padding: 80px 20px; grid-column: 1/-1; }
+.auth-gate { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 25000;
+    background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+.auth-gate.hidden { display: none; }
+.auth-gate .gate-card { background: rgba(20,20,20,0.85); border: 1px solid var(--glass-border);
+    border-radius: 24px; padding: 44px 40px; text-align: center; backdrop-filter: blur(30px); }
+.auth-gate .gate-card h2 { font-size: 1.4rem; margin-bottom: 12px; }
+.auth-gate .gate-card p { color: var(--white-tertiary); font-size: 0.9rem; margin-bottom: 24px; }
+.auth-gate .gate-card a { display: inline-block; padding: 14px 36px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
+    color: #fff; text-decoration: none; font-weight: 600; }
+.upgrade-hint { text-align: center; color: var(--white-tertiary); padding: 20px; font-size: 0.8rem; margin-top: 20px; }
+@media (max-width: 768px) { .storage-page { padding: 120px 16px 30px; } .storage-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="auth-gate" id="authGate"><div class="gate-card">
+    <h2>请先登录</h2><p>访问资料站需要登录账户</p>
+    <a href="index.html">返回主页登录</a>
+</div></div>
+<div class="loading" id="loading"><div class="loading-text">加载资料站...</div></div>
+<div class="starfield" id="starfield"></div>
+<div class="nebula"></div>
+<canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+<nav class="navbar">
+    <div class="logo">资料站</div>
+    <ul class="nav-links" style="display:flex">
+        <li><a href="index.html" class="nav-link">返回主页</a></li>
+        <li><a href="forum.html" class="nav-link nav-btn">论坛</a></li>
+    </ul>
+    <a class="nav-user" id="navUserBtn" href="#">登录</a>
+</nav>
+
+<div class="storage-page" id="storagePage">
+    <div class="storage-toolbar">
+        <label for="fileInput">+ 上传文件</label>
+        <input type="file" id="fileInput" />
+        <div class="toggle-row">
+            <input type="checkbox" id="makePublic" /><span>公开展示</span>
+        </div>
+    </div>
+    <div class="storage-grid" id="fileGrid"></div>
+    <div class="upgrade-hint">文件存储在 Supabase 云端，支持代码/文本/图片/任意格式</div>
+</div>
+
+<script src="script.js"></script>
+<script>
+if(!isLogged()){document.getElementById('authGate').classList.remove('hidden');document.getElementById('storagePage').style.display='none'}
+else document.getElementById('authGate').classList.add('hidden');
+
+function loadFiles(){
+    var session = getSession();
+    if(!session)return;
+    listFiles(session.user.id).then(function(r){
+        var files=r.data||[];var grid=document.getElementById('fileGrid');
+        grid.innerHTML='';
+        if(files.length===0){grid.innerHTML='<div class="storage-empty">还没有文件，点击上传按钮开始</div>';return}
+        files.forEach(function(f){
+            var card=document.createElement('div');card.className='storage-card';
+            var ext=(f.filename.split('.').pop()||'').toUpperCase();
+            var labels={PDF:'PDF',PNG:'PNG',JPG:'JPG',ZIP:'ZIP',TXT:'TXT',MD:'MD',JSON:'JSON',MP3:'MP3',MP4:'MP4',PY:'PY',JS:'JS',HTML:'HTML',CSS:'CSS'};
+            var icon=labels[ext]||ext||'文件';
+            var size='';if(f.file_size){if(f.file_size<1024)size=f.file_size+'B';else if(f.file_size<1048576)size=(f.file_size/1024).toFixed(1)+'KB';else size=(f.file_size/1048576).toFixed(1)+'MB'}
+            card.innerHTML='<div class="file-icon">'+icon+'</div>'+
+                (f.is_public?'<span class="public-badge">公开</span>':'')+
+                '<div class="file-name">'+f.filename+'</div>'+
+                '<div class="file-info"><span>'+ext+' 文件</span>'+(size?'<span>'+size+'</span>':'')+'</div>'+
+                '<div class="file-actions"><a href="'+SUPABASE_URL+'/storage/v1/object/public/files/'+f.storage_path+'" target="_blank"><button>查看</button></a>'+
+                '<button class="toggle-bt" data-id="'+f.id+'">'+(f.is_public?'设为私密':'设为公开')+'</button>'+
+                '<button class="del-btn" data-id="'+f.id+'" data-path="'+f.storage_path+'">删除</button></div>';
+            grid.appendChild(card);
+        });
+        // event delegation
+        grid.querySelectorAll('.toggle-bt').forEach(function(b){b.addEventListener('click',function(e){
+            e.stopPropagation();var id=b.dataset.id;var f=files.find(function(x){return x.id==id});
+            if(!f)return;toggleFilePublic(id,!f.is_public).then(function(){loadFiles()});
+        })});
+        grid.querySelectorAll('.del-btn').forEach(function(b){b.addEventListener('click',function(e){
+            e.stopPropagation();if(!confirm('确认删除？'))return;
+            deleteFile(b.dataset.id,b.dataset.path).then(function(){loadFiles()});
+        })});
+    });
+}
+document.getElementById('fileInput').addEventListener('change',function(){
+    var f=this.files[0];if(!f)return;
+    var isPub=document.getElementById('makePublic').checked;
+    uploadFile(f,isPub).then(function(){loadFiles();document.getElementById('fileInput').value=''});
+});
+loadFiles();
+setTimeout(function(){document.getElementById('loading').classList.add('fade-out')},600);
+</script>
+</body>
+</html>

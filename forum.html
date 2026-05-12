@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论坛 | Akano 赤野</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<style>
+.forum-page { max-width: 800px; margin: 0 auto; padding: 140px 24px 60px; }
+.forum-toolbar { display: flex; gap: 12px; margin-bottom: 28px; }
+.forum-toolbar input { flex: 1; min-width: 180px; padding: 12px 18px; border-radius: 14px;
+    border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--white);
+    font-size: 0.95rem; outline: none; backdrop-filter: blur(20px); }
+.forum-toolbar input:focus { border-color: var(--orange-primary); }
+.forum-toolbar input::placeholder { color: var(--white-tertiary); }
+.forum-btn { padding: 12px 24px; border-radius: 14px; border: 1px solid var(--glass-border);
+    background: var(--glass-bg); color: var(--white); font-size: 0.95rem; cursor: pointer; transition: 0.3s; white-space: nowrap;
+    backdrop-filter: blur(20px); }
+.forum-btn:hover { border-color: var(--orange-primary); background: rgba(255,107,53,0.1); }
+.forum-btn.primary { background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary)); border: none; font-weight: 600; }
+.forum-year-header { position: sticky; top: calc(var(--header-height) + 5px); z-index: 10;
+    text-align: center; margin-bottom: 28px; transition: opacity 0.5s; }
+.forum-year-text { color: var(--white); font-size: 3.5rem; font-weight: 200; letter-spacing: 3px; }
+.forum-list { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.forum-post { display: flex; align-items: flex-start; gap: 20px; padding: 20px 24px; border-radius: 16px;
+    backdrop-filter: blur(20px); background: var(--glass-bg); border: 1px solid var(--glass-border);
+    cursor: pointer; transition: all 0.3s; }
+.forum-post:hover { border-color: var(--orange-primary); transform: translateX(4px); }
+.forum-post.expanded:hover { transform: none; }
+.forum-post-date { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 48px; line-height: 1; }
+.forum-post-date .month { font-size: 2.2rem; font-weight: 800; color: var(--orange-primary); }
+.forum-post-date .day   { font-size: 1rem; color: var(--white-secondary); margin-top: 2px; }
+.forum-post-body { flex: 1; min-width: 0; }
+.forum-post-title { font-size: 1.1rem; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+.forum-post-preview { font-size: 0.9rem; color: var(--white-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forum-post.expanded .forum-post-preview { white-space: normal; }
+.forum-post-full { display: none; margin-top: 12px; font-size: 0.95rem; color: var(--white-secondary); line-height: 1.8; }
+.forum-post.expanded .forum-post-full { display: block; }
+.forum-post-meta { font-size: 0.75rem; color: var(--white-tertiary); margin-top: 8px; display: flex; gap: 12px; align-items: center; }
+.forum-author { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--white-tertiary); margin-top: 4px; }
+.forum-author img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+.forum-pager { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 32px; padding-bottom: 40px; }
+.forum-pager span { color: var(--white-secondary); font-size: 0.9rem; }
+.forum-empty { text-align: center; color: var(--white-tertiary); padding: 80px 20px; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 20001;
+    background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+.modal.open { display: flex; }
+.editor { background: rgba(20,20,20,0.92); border: 1px solid var(--glass-border); border-radius: 20px;
+    padding: 32px; max-width: 680px; width: 90%; max-height: 85vh; overflow-y: auto; backdrop-filter: blur(30px); }
+.editor h2 { font-size: 1.3rem; margin-bottom: 16px; }
+.editor label { display: block; font-size: 0.8rem; color: var(--white-tertiary); margin-bottom: 6px; margin-top: 14px; }
+.editor input,.editor textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--glass-border);
+    background: var(--glass-bg); color: var(--white); font-size: 0.9rem; outline: none; resize: vertical; font-family: inherit; }
+.editor input:focus,.editor textarea:focus { border-color: var(--orange-primary); }
+.editor textarea { min-height: 200px; }
+.editor .auto-info { font-size: 0.75rem; color: var(--white-tertiary); margin: 8px 0; }
+.editor .btn-row { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+.editor .btn-row button { padding: 10px 28px; border-radius: 12px; cursor: pointer; }
+.editor .cancel { border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--white); }
+.editor .save { border: none; background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary));
+    color: #fff; font-weight: 600; }
+.toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.toggle-row span { font-size: 0.85rem; color: var(--white-tertiary); }
+.toggle-row input[type=checkbox] { width: auto; accent-color: var(--orange-primary); }
+@media (max-width: 768px) {
+    .forum-page { padding: 120px 16px 30px; }
+    .forum-post { padding: 16px; gap: 14px; }
+    .forum-post-date .month { font-size: 1.6rem; }
+    .forum-post-date .day { font-size: 0.85rem; }
+    .forum-year-text { font-size: 2.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><div class="loading-text">加载论坛...</div></div>
+<div class="starfield" id="starfield"></div>
+<div class="nebula"></div>
+<canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+<nav class="navbar">
+    <div class="logo">论坛</div>
+    <div class="hamburger-menu" id="hamburgerMenu"><span></span><span></span><span></span></div>
+    <ul class="nav-links" id="navLinks">
+        <li><a href="index.html" class="nav-link">返回主页</a></li>
+        <li><a href="storage.html" class="nav-link nav-btn">资料站</a></li>
+    </ul>
+    <a class="nav-user" id="navUserBtn" href="#">登录</a>
+</nav>
+
+<div class="forum-page">
+    <div class="forum-toolbar">
+        <input type="text" id="searchInput" placeholder="搜索帖子..." />
+        <button class="forum-btn primary" id="writeBtn">写帖子</button>
+    </div>
+    <div class="forum-year-header" id="yearHeader"><span class="forum-year-text" id="yearText"></span></div>
+    <div class="forum-list" id="postList"></div>
+    <div class="forum-pager" id="pager"></div>
+</div>
+
+<div class="modal" id="writeModal">
+    <div class="editor">
+        <h2>写帖子</h2>
+        <label>标题</label><input type="text" id="writeTitle" placeholder="帖子标题" maxlength="80" />
+        <div class="auto-info" id="writeInfo"></div>
+        <label>内容</label><textarea id="writeContent" placeholder="说说你的想法..."></textarea>
+        <div class="toggle-row">
+            <input type="checkbox" id="isPublic" checked /><span>公开发布到论坛</span>
+        </div>
+        <div class="btn-row">
+            <button class="cancel" id="writeCancel">取消</button>
+            <button class="save" id="writeSave">发布</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+var PAGE = 1, SIZE = 10, TOTAL = 0;
+var w = document.getElementById('writeModal');
+document.getElementById('writeBtn').addEventListener('click',function(){
+    if(!isLogged()){showLoginModal();return;}
+    document.getElementById('writeTitle').value='';
+    document.getElementById('writeContent').value='';
+    var h='https://nf5vxp5t6b.re.qweatherapi.com',k='a4e3f58fac344d79b967f350a89365aa';
+    fetch(h+'/v7/weather/now?location=113.26,23.13&key='+k).then(function(r){return r.json();})
+        .then(function(d){var t=d.code==='200'?d.now.text+' '+d.now.temp+'C':'未知';
+            var n=new Date();document.getElementById('writeInfo').textContent=n.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+' | 天气: '+t;})
+        .catch(function(){document.getElementById('writeInfo').textContent='天气获取失败';});
+    w.classList.add('open');
+});
+document.getElementById('writeCancel').addEventListener('click',function(){w.classList.remove('open')});
+w.addEventListener('click',function(e){if(e.target===w)w.classList.remove('open')});
+document.getElementById('writeSave').addEventListener('click',function(){
+    var t=document.getElementById('writeTitle').value.trim();
+    var c=document.getElementById('writeContent').value.trim();
+    var p=document.getElementById('isPublic').checked;
+    if(!t)return alert('请输入标题');
+    if(!c)return alert('请输入内容');
+    var weather=document.getElementById('writeInfo').textContent.split('天气: ')[1]||'';
+    createForumPost(t,c,p,weather).then(function(){w.classList.remove('open');loadPosts();});
+});
+
+function loadPosts(){
+    var s=document.getElementById('searchInput').value.trim();
+    listForumPosts(PAGE,SIZE,s).then(function(r){
+        var posts=r.data||[];TOTAL=r.count||posts.length;
+        var list=document.getElementById('postList');
+        var yh=document.getElementById('yearHeader');
+        list.innerHTML='';
+        if(posts.length===0){list.innerHTML='<div class="forum-empty">还没有帖子，来做第一个发帖的人吧</div>';yh.style.opacity='0';}
+        else {
+            var yr=new Date(posts[0].created_at).getFullYear();
+            document.getElementById('yearText').textContent=yr+'年';yh.style.opacity='1';
+            posts.forEach(function(p){
+                var d=new Date(p.created_at);var prof=p.profiles||{};
+                var el=document.createElement('div');el.className='forum-post';
+                el.innerHTML='<div class="forum-post-date"><span class="month">'+(d.getMonth()+1)+'</span><span class="day">'+d.getDate()+'</span></div>'+
+                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div>'+
+                '<div class="forum-post-preview">'+(p.content||'').slice(0,100)+(p.content&&p.content.length>100?'...':'')+'</div>'+
+                '<div class="forum-post-full">'+(p.content||'').replace(/\n/g,'<br>')+'</div>'+
+                '<div class="forum-author">'+(prof.avatar_url?'<img src="'+prof.avatar_url+'" />':'')+'<span>'+(prof.nickname||prof.username||'用户')+'</span>'+
+                (prof.member_id?'<span style="opacity:0.5">#'+prof.member_id+'</span>':'')+'</div>'+
+                '<div class="forum-post-meta"><span>'+(p.weather||'')+'</span></div></div>';
+                el.addEventListener('click',function(){el.classList.toggle('expanded')});
+                list.appendChild(el);el.dataset.year=d.getFullYear();
+            });
+        }
+        renderPager();
+    });
+}
+function renderPager(){
+    var pages=Math.ceil(TOTAL/SIZE)||1;
+    document.getElementById('pager').innerHTML=
+        '<button class="forum-btn" id="prevBtn" '+(PAGE<=1?'disabled':'')+'>上一页</button>'+
+        '<span>'+PAGE+' / '+pages+'</span>'+
+        '<button class="forum-btn" id="nextBtn" '+(PAGE>=pages?'disabled':'')+'>下一页</button>';
+    var pb=document.getElementById('prevBtn'),nb=document.getElementById('nextBtn');
+    if(pb)pb.addEventListener('click',function(){if(PAGE>1){PAGE--;loadPosts();window.scrollTo(0,0)}});
+    if(nb)nb.addEventListener('click',function(){if(PAGE<pages){PAGE++;loadPosts();window.scrollTo(0,0)}});
+}
+document.getElementById('searchInput').addEventListener('input',function(){PAGE=1;loadPosts()});
+loadPosts();
+setTimeout(function(){document.getElementById('loading').classList.add('fade-out')},600);
+</script>
+</body>
+</html>

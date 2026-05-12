@@ -1,4 +1,56 @@
-﻿var stars = [];
+﻿var AUTH_KEY = 'akano_auth_token';
+var USERS_KEY = 'akano_users';
+
+window.getAuthUser = function () {
+    return localStorage.getItem(AUTH_KEY);
+};
+window.isLoggedIn = function () {
+    return !!localStorage.getItem(AUTH_KEY);
+};
+window.getUsers = function () {
+    var raw = localStorage.getItem(USERS_KEY);
+    if (!raw) {
+        var old = localStorage.getItem('akano_storage_users');
+        if (old) {
+            localStorage.setItem(USERS_KEY, old);
+            localStorage.removeItem('akano_storage_users');
+            return JSON.parse(old);
+        }
+        return [];
+    }
+    return JSON.parse(raw);
+};
+window.saveUsers = function (arr) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(arr));
+};
+window.findUser = function (username) {
+    var users = window.getUsers();
+    for (var i = 0; i < users.length; i++) {
+        if (users[i].user === username) return users[i];
+    }
+    return null;
+};
+window.loginAuth = function (username, pass) {
+    var user = window.findUser(username);
+    if (!user) return { ok: false, error: '用户名不存在' };
+    if (user.pass !== pass) return { ok: false, error: '密码错误' };
+    localStorage.setItem(AUTH_KEY, username);
+    return { ok: true };
+};
+window.registerAuth = function (userObj) {
+    if (window.findUser(userObj.user)) return { ok: false, error: '用户名已被注册' };
+    if (!userObj.phone && !userObj.email) return { ok: false, error: '手机号或邮箱至少填一项' };
+    var users = window.getUsers();
+    users.push(userObj);
+    window.saveUsers(users);
+    localStorage.setItem(AUTH_KEY, userObj.user);
+    return { ok: true };
+};
+window.logoutAuth = function () {
+    localStorage.removeItem(AUTH_KEY);
+};
+
+var stars = [];
 var starEls = [];
 var constellationGroups = [];
 var animFrame = 0;
@@ -203,7 +255,7 @@ function createConstellation() {
 
 function createMeteors() {
     const starfield = document.getElementById('starfield');
-    const maxMeteors = 5;
+    const maxMeteors = 2;
     let activeMeteors = 0;
     function spawnMeteor() {
         if (activeMeteors >= maxMeteors) return;
@@ -221,7 +273,7 @@ function createMeteors() {
     }
     function scheduleMeteor() {
         spawnMeteor();
-        setTimeout(scheduleMeteor, Math.random() * 1500 + 500);
+        setTimeout(scheduleMeteor, Math.random() * 5000 + 10000);
     }
     scheduleMeteor();
 }
@@ -251,30 +303,6 @@ function updateLunarDate(date) {
     document.getElementById('lunarDate').textContent = lunarYear + lunarDates[index];
 }
 
-function getQWeatherIcon(code) {
-    const map = {
-        '100': '☀️', '150': '🌙',
-        '101': '⛅', '151': '☁️', '102': '🌤️',
-        '103': '⛅', '104': '☁️', '154': '☁️',
-        '300': '🌦️', '301': '🌧️', '302': '⛈️', '303': '⛈️',
-        '304': '🌧️', '305': '🌧️', '306': '🌧️', '307': '🌧️',
-        '308': '🌧️', '309': '🌧️', '310': '🌧️', '311': '🌧️',
-        '312': '🌧️', '313': '🌧️', '314': '🌧️', '315': '🌧️',
-        '316': '🌧️', '317': '🌧️', '318': '🌧️',
-        '350': '🌦️', '351': '🌧️', '399': '🌧️',
-        '400': '❄️', '401': '❄️', '402': '❄️', '403': '❄️',
-        '404': '🌨️', '405': '🌨️', '406': '🌨️', '407': '🌨️',
-        '408': '❄️', '409': '❄️', '410': '❄️',
-        '456': '🌨️', '457': '🌨️', '499': '❄️',
-        '500': '🌫️', '501': '🌫️', '502': '🌫️',
-        '503': '🌪️', '504': '🌪️', '507': '🌪️', '508': '🌪️',
-        '509': '🌫️', '510': '🌫️', '511': '🌫️', '512': '🌫️',
-        '513': '🌫️', '514': '🌫️', '515': '🌫️',
-        '900': '🥵', '901': '🥶', '999': '🌡️'
-    };
-    return map[String(code)] || '🌡️';
-}
-
 function getWeather() {
     var lat = 23.1291;
     var lon = 113.2644;
@@ -298,13 +326,12 @@ function fetchWeather(lat, lon) {
         .then(function (data) {
             if (data.code !== '200') throw new Error(data.code);
             var now = data.now;
-            var icon = getQWeatherIcon(now.icon);
-            document.getElementById('weatherIcon').textContent = icon;
-            document.getElementById('weatherInfo').textContent = now.text + ' ' + now.temp + '°C';
+            document.getElementById('weatherIcon').textContent = '天气';
+            document.getElementById('weatherInfo').textContent = now.text + ' ' + now.temp + 'C';
         })
         .catch(function () {
-            document.getElementById('weatherIcon').textContent = '🌡️';
-            document.getElementById('weatherInfo').textContent = '获取天气失败';
+            document.getElementById('weatherIcon').textContent = '天气';
+            document.getElementById('weatherInfo').textContent = '获取失败';
         });
 }
 
