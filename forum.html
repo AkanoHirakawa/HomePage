@@ -144,7 +144,8 @@ document.getElementById('writeSave').addEventListener('click',function(){
 function loadPosts(){
     var s=document.getElementById('searchInput').value.trim();
     listForumPosts(PAGE,SIZE,s).then(function(r){
-        var posts=r.data||[];TOTAL=r.count||posts.length;
+        var posts=r.data||[];TOTAL=r.count||0;
+        if(TOTAL===0)TOTAL=posts.length;
         var list=document.getElementById('postList');
         var yh=document.getElementById('yearHeader');
         list.innerHTML='';
