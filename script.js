@@ -1,18 +1,204 @@
-﻿function createStarfield() {
-    const starfield = document.getElementById('starfield');
-    const starCount = 200;
+﻿var stars = [];
+var starEls = [];
+var constellationGroups = [];
+var animFrame = 0;
+
+function createStarfield() {
+    var starfield = document.getElementById('starfield');
+    var W = window.innerWidth || 1920;
+    var H = window.innerHeight || 1080;
+    var cols = 20;
+    var rows = Math.ceil(200 / cols);
+    var cellW = W / cols;
+    var cellH = H / rows;
     starfield.innerHTML = '';
-    for (let i = 0; i < starCount; i++) {
-        const star = document.createElement('div');
-        star.className = 'star';
-        const size = Math.random() * 2 + 1;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDelay = `${Math.random() * 5}s`;
-        starfield.appendChild(star);
+    stars = [];
+    starEls = [];
+    for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < cols; c++) {
+            if (starEls.length >= 200) break;
+            var el = document.createElement('div');
+            el.className = 'star';
+            var size = Math.random() * 2.5 + 1;
+            el.style.width = size + 'px';
+            el.style.height = size + 'px';
+            el.style.animation = 'none';
+            starfield.appendChild(el);
+            starEls.push(el);
+            var speed = Math.random() * 0.06 + 0.02;
+            var angle = Math.random() * Math.PI * 2;
+            var baseX = c * cellW + cellW * 0.1;
+            var baseY = r * cellH + cellH * 0.1;
+            var jitterW = cellW * 0.7;
+            var jitterH = cellH * 0.7;
+            stars.push({
+                x: baseX + Math.random() * jitterW,
+                y: baseY + Math.random() * jitterH,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: size,
+                phase: Math.random() * Math.PI * 2,
+                twinkleSpd: Math.random() * 0.008 + 0.003
+            });
+        }
     }
+}
+
+function createConstellation() {
+    var canvas = document.getElementById('constellationCanvas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width = window.innerWidth || 1920;
+    var H = canvas.height = window.innerHeight || 1080;
+    var MAX_DIST = 150;
+
+    function dist(a, b) {
+        var dx = a.x - b.x;
+        var dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function findNearest(fromIdx, pool) {
+        var best = -1;
+        var bestDist = MAX_DIST;
+        for (var i = 0; i < pool.length; i++) {
+            var d = dist(stars[fromIdx], stars[pool[i]]);
+            if (d < bestDist) {
+                bestDist = d;
+                best = i;
+            }
+        }
+        return best >= 0 ? pool.splice(best, 1)[0] : -1;
+    }
+
+    function makeGroups() {
+        constellationGroups = [];
+        var pool = [];
+        for (var i = 0; i < stars.length; i++) pool.push(i);
+        for (var i = pool.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+        }
+        var groupCount = Math.floor(Math.random() * 4) + 3;
+        for (var g = 0; g < groupCount && pool.length >= 3; g++) {
+            var maxSize = Math.floor(Math.random() * 5) + 3;
+            var start = pool.pop();
+            var members = [start];
+            var last = start;
+            for (var s = 1; s < maxSize && pool.length > 0; s++) {
+                var next = findNearest(last, pool);
+                if (next < 0) break;
+                members.push(next);
+                last = next;
+            }
+            if (members.length >= 3) {
+                constellationGroups.push({
+                    members: members,
+                    alpha: 0,
+                    targetAlpha: Math.random() * 0.22 + 0.1
+                });
+            }
+        }
+    }
+
+    function segmentsCross(a1, a2, b1, b2) {
+        function ccw(p, q, r) {
+            return (r.y - p.y) * (q.x - p.x) > (q.y - p.y) * (r.x - p.x);
+        }
+        return ccw(a1, b1, b2) !== ccw(a2, b1, b2) && ccw(a1, a2, b1) !== ccw(a1, a2, b2);
+    }
+
+    function hasLineCrossing(group) {
+        var m = group.members;
+        for (var i = 0; i < m.length - 1; i++) {
+            var a1 = stars[m[i]];
+            var a2 = stars[m[i + 1]];
+            for (var j = i + 2; j < m.length - 1; j++) {
+                var b1 = stars[m[j]];
+                var b2 = stars[m[j + 1]];
+                if (dist(a1, a2) > MAX_DIST * 1.5 || dist(b1, b2) > MAX_DIST * 1.5) return true;
+                if (segmentsCross(a1, a2, b1, b2)) return true;
+            }
+        }
+        return false;
+    }
+
+    function cleanCrossingGroups() {
+        for (var g = constellationGroups.length - 1; g >= 0; g--) {
+            if (hasLineCrossing(constellationGroups[g])) {
+                constellationGroups.splice(g, 1);
+            }
+        }
+    }
+
+    makeGroups();
+    cleanCrossingGroups();
+
+    function loop() {
+        animFrame++;
+        W = canvas.width;
+        H = canvas.height;
+
+        for (var i = 0; i < stars.length; i++) {
+            var s = stars[i];
+            s.x += s.vx;
+            s.y += s.vy;
+            if (s.x < -20) s.x = W + 20;
+            if (s.x > W + 20) s.x = -20;
+            if (s.y < -20) s.y = H + 20;
+            if (s.y > H + 20) s.y = -20;
+            s.phase += s.twinkleSpd;
+            var op = 0.25 + 0.5 * ((Math.sin(s.phase) + 1) / 2);
+            var el = starEls[i];
+            if (el) {
+                el.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px)';
+                el.style.opacity = op;
+            }
+        }
+
+        ctx.clearRect(0, 0, W, H);
+
+        for (var g = 0; g < constellationGroups.length; g++) {
+            var group = constellationGroups[g];
+            group.alpha += (group.targetAlpha - group.alpha) * 0.01;
+            if (group.alpha < 0.015) continue;
+            var m = group.members;
+            for (var k = 0; k < m.length - 1; k++) {
+                var si = m[k];
+                var sj = m[k + 1];
+                if (si >= stars.length || sj >= stars.length) continue;
+                var a = stars[si];
+                var b = stars[sj];
+                var grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+                grad.addColorStop(0, 'rgba(255,255,255,0)');
+                grad.addColorStop(0.25, 'rgba(255,255,255,' + group.alpha + ')');
+                grad.addColorStop(0.75, 'rgba(255,255,255,' + group.alpha + ')');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        if (animFrame % 300 === 0) {
+            makeGroups();
+            cleanCrossingGroups();
+            if (constellationGroups.length < 2) { makeGroups(); cleanCrossingGroups(); }
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+
+    window.addEventListener('resize', function () {
+        canvas.width = window.innerWidth || 1920;
+        canvas.height = window.innerHeight || 1080;
+        W = canvas.width;
+        H = canvas.height;
+    });
 }
 
 function createMeteors() {
@@ -165,6 +351,7 @@ function setupMobileMenu() {
 
 window.addEventListener('load', () => {
     createStarfield();
+    createConstellation();
     updateDateTime();
     setInterval(updateDateTime, 1000);
     getWeather();
