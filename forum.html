@@ -132,20 +132,7 @@
 
 <script src="script.js"></script>
 <script>
-var lg=document.getElementById('loginGate');
-setTimeout(function(){if(!isLogged()){lg.style.display='flex'}else{lg.style.display='none'}},800);
-
-document.getElementById('gateLogin').addEventListener('click',function(){
-    var e=document.getElementById('gateEmail').value.trim();
-    var p=document.getElementById('gatePass').value;
-    if(!e||!p)return;
-    signInEmail(e,p).then(function(r){
-        if(r.ok){lg.style.display='none'}
-        else document.getElementById('gateErr').textContent=r.error;
-    }).catch(function(err){document.getElementById('gateErr').textContent='network error'});
-});
-document.getElementById('gatePass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('gateLogin').click()});
-
+function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 var PAGE = 1, SIZE = 10, TOTAL = 0;
 var w = document.getElementById('writeModal');
 document.getElementById('writeBtn').addEventListener('click',function(){
@@ -192,8 +179,8 @@ function loadPosts(){
                 el.style.cursor='pointer';el.style.position='relative';
                 el.addEventListener('click',function(){window.location.href='post.html?id='+p.id});
                 el.innerHTML='<div class="forum-post-date"><span class="month">'+(d.getMonth()+1)+'月</span><span class="day">'+d.getDate()+'日</span></div>'+
-                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div>'+
-                '<div class="forum-post-author">'+author+(mid?'  ID '+mid:'')+'</div></div>'+
+                '<div class="forum-post-body"><div class="forum-post-title">'+escapeHtml(p.title)+'</div>'+
+                '<div class="forum-post-author">'+escapeHtml(author)+(mid?'  ID '+mid:'')+'</div></div>'+
                 '<button class="post-del-btn" data-id="'+p.id+'">X</button>';
                 list.appendChild(el);
                 el.querySelector('.post-del-btn').addEventListener('click',function(e){

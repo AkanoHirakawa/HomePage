@@ -227,6 +227,7 @@
 
     <script src="script.js"></script>
     <script>
+    function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
     // ===== Flip cards =====
     function flipLoop(items, boxes, linkUrl){
         if(items.length===0){boxes.forEach(function(b){b.querySelector('.flip-front').textContent='No data'});return}
@@ -238,7 +239,7 @@
             var author=prof.nickname||prof.username||'';
             if(author.indexOf('@')>0)author=author.split('@')[0];
             var sub=author?(author+(prof.member_id?'  ID '+prof.member_id:'')):(item.file_type||'');
-            front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+title+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+sub+'</div></div>';
+            front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+escapeHtml(title)+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+escapeHtml(sub)+'</div></div>';
             front.style.transition='none';front.style.transform='rotateX(0deg)';front.style.opacity='1';
             box.onclick=function(){location.href=linkUrl};
             setTimeout(function(){
@@ -252,7 +253,7 @@
                     if(nauthor.indexOf('@')>0)nauthor=nauthor.split('@')[0];
                     var nsub=nauthor?(nauthor+(nprof.member_id?'  ID '+nprof.member_id:'')):(nitem.file_type||'');
                     front.style.transition='none';front.style.transform='rotateX(-90deg)';
-                    front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+ntitle+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+nsub+'</div></div>';
+                    front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+escapeHtml(ntitle)+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+escapeHtml(nsub)+'</div></div>';
                     front.style.opacity='1';
                     setTimeout(function(){
                         front.style.transition='transform 1s ease-out, opacity 0.5s';

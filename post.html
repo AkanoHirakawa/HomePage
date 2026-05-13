@@ -53,6 +53,14 @@ if(id){
             var mid = prof.member_id || '';
             document.getElementById('postMeta').textContent = (d.getMonth()+1)+'月'+d.getDate()+'日 '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+'  by '+author+(mid?'  ID '+mid:'');
             document.getElementById('postContent').textContent = p.content;
+            var d = new Date(p.created_at);
+            var prof = p.profiles || {};
+            var author = prof.nickname || prof.username || '';
+            if(author.indexOf('@')>0) author = author.split('@')[0];
+            if(!author) author='匿名';
+            var mid = prof.member_id || '';
+            document.getElementById('postMeta').textContent = (d.getMonth()+1)+'月'+d.getDate()+'日 '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+'  by '+author+(mid?'  ID '+mid:'');
+            document.getElementById('postContent').textContent = p.content;
             var delBtn = document.createElement('button');
             delBtn.textContent = 'Delete';
             delBtn.style.cssText = 'margin-top:20px;padding:8px 18px;border-radius:8px;border:1px solid rgba(200,50,50,0.3);background:rgba(200,50,50,0.15);color:#f66;cursor:pointer;font-size:0.85rem';
