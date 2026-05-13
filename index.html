@@ -27,8 +27,8 @@
             <li><a href="#about" class="nav-link">关于我</a></li>
             <li><a href="#interests" class="nav-link">兴趣</a></li>
             <li><a href="#studio" class="nav-link">工作室</a></li>
-            <li><a href="#forum-section" class="nav-link nav-btn">论坛</a></li>
-            <li><a href="#storage-section" class="nav-link nav-btn">资料库</a></li>
+            <li><a href="#forum-section" class="nav-link">论坛</a></li>
+            <li><a href="#storage-section" class="nav-link">资料库</a></li>
             <li><a href="#contact" class="nav-link">联系</a></li>
         </ul>
         <a class="nav-user" id="navUserBtn" href="#">登录</a>
@@ -140,24 +140,22 @@
 
         <section id="forum-section" class="content-section">
             <h2 class="section-title">论坛</h2>
-            <div class="cards-grid">
-                <div class="glass-card" style="text-align:center">
-                    <h3>社区论坛</h3>
-                    <p>分享想法，参与讨论</p>
-                    <a href="forum.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px;margin-top:12px">进入论坛</a>
-                </div>
+            <div style="perspective:800px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap;padding:0 20px">
+                <div class="flip-box" id="flip0" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
+                <div class="flip-box" id="flip1" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
+                <div class="flip-box" id="flip2" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
             </div>
+            <div style="text-align:center;margin-top:30px"><a href="forum.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px">进入论坛</a></div>
         </section>
 
         <section id="storage-section" class="content-section">
             <h2 class="section-title">资料库</h2>
-            <div class="cards-grid">
-                <div class="glass-card" style="text-align:center">
-                    <h3>文件仓库</h3>
-                    <p>上传管理代码、文本、图片等文件</p>
-                    <a href="storage.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px;margin-top:12px">进入资料库</a>
-                </div>
+            <div style="perspective:800px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap;padding:0 20px">
+                <div class="flip-box" id="sflip0" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
+                <div class="flip-box" id="sflip1" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
+                <div class="flip-box" id="sflip2" style="flex:1;min-width:200px;max-width:350px;height:140px;position:relative;transform-style:preserve-3d"><div class="flip-front" style="position:absolute;width:100%;height:100%;border-radius:16px;backdrop-filter:blur(20px);background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:1rem;backface-visibility:hidden;cursor:pointer;text-align:center;padding:16px">Loading...</div></div>
             </div>
+            <div style="text-align:center;margin-top:30px"><a href="storage.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px">进入资料库</a></div>
         </section>
 
         <section id="contact" class="content-section">
@@ -229,6 +227,50 @@
 
     <script src="script.js"></script>
     <script>
+    // ===== Flip cards =====
+    function flipLoop(items, boxes, linkUrl){
+        if(items.length===0){boxes.forEach(function(b){b.querySelector('.flip-front').textContent='No data'});return}
+        var idxs=boxes.map(function(_,i){return i%items.length});
+        function cycle(i){
+            var box=boxes[i], front=box.querySelector('.flip-front');
+            var item=items[idxs[i]], title=item.title||item.filename||'';
+            var prof=item.profiles||{};
+            var author=prof.nickname||prof.username||'';
+            if(author.indexOf('@')>0)author=author.split('@')[0];
+            var sub=author?(author+(prof.member_id?'  ID '+prof.member_id:'')):(item.file_type||'');
+            front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+title+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+sub+'</div></div>';
+            front.style.transition='none';front.style.transform='rotateX(0deg)';front.style.opacity='1';
+            box.onclick=function(){location.href=linkUrl};
+            setTimeout(function(){
+                front.style.transition='transform 1s ease-in, opacity 0.5s';
+                front.style.transform='rotateX(90deg)';front.style.opacity='0';
+                setTimeout(function(){
+                    idxs[i]=(idxs[i]+1)%items.length;
+                    var nitem=items[idxs[i]],ntitle=nitem.title||nitem.filename||'';
+                    var nprof=nitem.profiles||{};
+                    var nauthor=nprof.nickname||nprof.username||'';
+                    if(nauthor.indexOf('@')>0)nauthor=nauthor.split('@')[0];
+                    var nsub=nauthor?(nauthor+(nprof.member_id?'  ID '+nprof.member_id:'')):(nitem.file_type||'');
+                    front.style.transition='none';front.style.transform='rotateX(-90deg)';
+                    front.innerHTML='<div><div style="font-size:1.1rem;margin-bottom:4px">'+ntitle+'</div><div style="font-size:0.78rem;color:var(--white-tertiary)">'+nsub+'</div></div>';
+                    front.style.opacity='1';
+                    setTimeout(function(){
+                        front.style.transition='transform 1s ease-out, opacity 0.5s';
+                        front.style.transform='rotateX(0deg)';
+                        setTimeout(function(){cycle(i)},1100);
+                    },60);
+                },1100);
+            },6000);
+        }
+        boxes.forEach(function(_,i){setTimeout(function(){cycle(i)},i*1600)});
+    }
+    supabase.from('forum_posts').select('*, profiles(nickname, username, member_id)').eq('is_public',true).order('created_at',{ascending:false}).limit(20).then(function(r){
+        flipLoop(r.data||[], [document.getElementById('flip0'),document.getElementById('flip1'),document.getElementById('flip2')], 'forum.html');
+    });
+    supabase.from('private_files').select('*').eq('is_public',true).order('created_at',{ascending:false}).limit(20).then(function(r){
+        flipLoop((r.data||[]).map(function(x){return {title:x.filename,file_type:x.file_type,id:x.id}}), [document.getElementById('sflip0'),document.getElementById('sflip1'),document.getElementById('sflip2')], 'storage.html');
+    });
+
     // ===== Tab Switch =====
     document.querySelectorAll('.auth-tab').forEach(function(t){
         t.addEventListener('click',function(){
