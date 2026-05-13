@@ -101,7 +101,7 @@ function createConstellation() {
     var ctx = canvas.getContext('2d');
     var W = canvas.width = window.innerWidth || 1920;
     var H = canvas.height = window.innerHeight || 1080;
-    var MAX_DIST = 150;
+    var MAX_DIST = 80;
 
     function dist(a, b) {
         var dx = a.x - b.x;
@@ -130,9 +130,9 @@ function createConstellation() {
             var j = Math.floor(Math.random() * (i + 1));
             var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
         }
-        var groupCount = Math.floor(Math.random() * 4) + 3;
+        var groupCount = Math.floor(Math.random() * 3) + 2;
         for (var g = 0; g < groupCount && pool.length >= 3; g++) {
-            var maxSize = Math.floor(Math.random() * 5) + 3;
+            var maxSize = Math.floor(Math.random() * 3) + 3;
             var start = pool.pop();
             var members = [start];
             var last = start;
@@ -211,7 +211,7 @@ function createConstellation() {
 
         for (var g = 0; g < constellationGroups.length; g++) {
             var group = constellationGroups[g];
-            group.alpha += (group.targetAlpha - group.alpha) * 0.01;
+            group.alpha += (group.targetAlpha - group.alpha) * 0.004;
             if (group.alpha < 0.015) continue;
             var m = group.members;
             for (var k = 0; k < m.length - 1; k++) {
@@ -234,7 +234,7 @@ function createConstellation() {
             }
         }
 
-        if (animFrame % 300 === 0) {
+        if (animFrame % 500 === 0) {
             makeGroups();
             cleanCrossingGroups();
             if (constellationGroups.length < 2) { makeGroups(); cleanCrossingGroups(); }
@@ -280,11 +280,12 @@ function createMeteors() {
 
 function updateDateTime() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    document.getElementById('timeDisplay').textContent = timeString;
-    const dateString = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-    document.getElementById('dateDisplay').textContent = dateString;
-    updateLunarDate(now);
+    const td = document.getElementById('timeDisplay');
+    if (td) td.textContent = now.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dd = document.getElementById('dateDisplay');
+    if (dd) dd.textContent = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    const ld = document.getElementById('lunarDate');
+    if (ld) updateLunarDate(now);
 }
 
 function updateLunarDate(date) {
@@ -300,7 +301,8 @@ function updateLunarDate(date) {
     const stemIndex = yearIndex % 10;
     const branchIndex = yearIndex % 12;
     const lunarYear = "农历" + heavenlyStems[stemIndex] + earthlyBranches[branchIndex] + "年";
-    document.getElementById('lunarDate').textContent = lunarYear + lunarDates[index];
+    const ld = document.getElementById('lunarDate');
+    if (ld) ld.textContent = lunarYear + lunarDates[index];
 }
 
 function getWeather() {
@@ -326,12 +328,16 @@ function fetchWeather(lat, lon) {
         .then(function (data) {
             if (data.code !== '200') throw new Error(data.code);
             var now = data.now;
-            document.getElementById('weatherIcon').textContent = '天气';
-            document.getElementById('weatherInfo').textContent = now.text + ' ' + now.temp + 'C';
+            var wi = document.getElementById('weatherIcon');
+            var wf = document.getElementById('weatherInfo');
+            if (wi) wi.textContent = '天气';
+            if (wf) wf.textContent = now.text + ' ' + now.temp + 'C';
         })
         .catch(function () {
-            document.getElementById('weatherIcon').textContent = '天气';
-            document.getElementById('weatherInfo').textContent = '获取失败';
+            var wi = document.getElementById('weatherIcon');
+            var wf = document.getElementById('weatherInfo');
+            if (wi) wi.textContent = '天气';
+            if (wf) wf.textContent = '获取失败';
         });
 }
 
@@ -349,6 +355,7 @@ function setupScrollAnimations() {
     });
     const heroTitle = document.querySelector('.akano-main-title');
     const heroSubtitle = document.querySelector('.akano-studio-subtitle');
+    if (heroTitle && heroSubtitle) {
     window.addEventListener('scroll', () => {
         const scrollY = window.scrollY;
         const scrollRatio = Math.min(scrollY / 500, 1);
@@ -356,6 +363,7 @@ function setupScrollAnimations() {
         heroTitle.style.backgroundImage = newColor;
         heroSubtitle.style.color = `rgba(255, 255, 255, ${1 - scrollRatio * 0.5})`;
     });
+    }
 }
 
 function setupMobileMenu() {
@@ -385,9 +393,10 @@ window.addEventListener('load', () => {
     setInterval(getWeather, 3600000);
     setupScrollAnimations();
     window.scrollTo(0, 0);
-    setTimeout(() => {
-        document.getElementById('loading').classList.add('fade-out');
-    }, 1000);
     createMeteors();
     setupMobileMenu();
+    setTimeout(() => {
+        var ld = document.getElementById('loading');
+        if (ld) ld.classList.add('fade-out');
+    }, 1000);
 });

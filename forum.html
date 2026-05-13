@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>论坛 | Akano 赤野</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
 <script src="supabase.js"></script>
 <style>
 .forum-page { max-width: 800px; margin: 0 auto; padding: 140px 24px 60px; }
@@ -25,9 +25,10 @@
 .forum-year-text { color: var(--white); font-size: 3.5rem; font-weight: 200; letter-spacing: 3px; }
 .forum-list { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
 .forum-post { display: flex; align-items: flex-start; gap: 20px; padding: 20px 24px; border-radius: 16px;
-    backdrop-filter: blur(20px); background: var(--glass-bg); border: 1px solid var(--glass-border);
-    cursor: pointer; transition: all 0.3s; }
-.forum-post:hover { border-color: var(--orange-primary); transform: translateX(4px); }
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer; transition: all 0.3s; color: var(--white); text-decoration: none; opacity: 1 !important; transform: none !important; }
+.forum-post:hover { border-color: var(--orange-primary); transform: translateX(4px); opacity: 1 !important; }
 .forum-post.expanded:hover { transform: none; }
 .forum-post-date { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 48px; line-height: 1; }
 .forum-post-date .month { font-size: 2.2rem; font-weight: 800; color: var(--orange-primary); }
@@ -66,7 +67,7 @@
 .toggle-row input[type=checkbox] { width: auto; accent-color: var(--orange-primary); }
 @media (max-width: 768px) {
     .forum-page { padding: 120px 16px 30px; }
-    .forum-post { padding: 16px; gap: 14px; }
+    .forum-post { padding: 16px; gap: 14px; opacity: 1 !important; transform: none !important; }
     .forum-post-date .month { font-size: 1.6rem; }
     .forum-post-date .day { font-size: 0.85rem; }
     .forum-year-text { font-size: 2.5rem; }
@@ -119,7 +120,7 @@
 var PAGE = 1, SIZE = 10, TOTAL = 0;
 var w = document.getElementById('writeModal');
 document.getElementById('writeBtn').addEventListener('click',function(){
-    if(!isLogged()){showLoginModal();return;}
+    if(!isLogged()){window.location.href='index.html';return;}
     document.getElementById('writeTitle').value='';
     document.getElementById('writeContent').value='';
     var h='https://nf5vxp5t6b.re.qweatherapi.com',k='a4e3f58fac344d79b967f350a89365aa';
@@ -142,29 +143,23 @@ document.getElementById('writeSave').addEventListener('click',function(){
 });
 
 function loadPosts(){
-    var s=document.getElementById('searchInput').value.trim();
-    listForumPosts(PAGE,SIZE,s).then(function(r){
-        var posts=r.data||[];TOTAL=r.count||0;
-        if(TOTAL===0)TOTAL=posts.length;
+    listForumPosts().then(function(r){
+        var posts=r.data||[];TOTAL=posts.length;
         var list=document.getElementById('postList');
         var yh=document.getElementById('yearHeader');
         list.innerHTML='';
-        if(posts.length===0){list.innerHTML='<div class="forum-empty">还没有帖子，来做第一个发帖的人吧</div>';yh.style.opacity='0';}
+        if(posts.length===0){list.innerHTML='<div class="forum-empty">还没有帖子</div>';yh.style.opacity='1';document.getElementById('yearText').textContent=new Date().getFullYear();}
         else {
             var yr=new Date(posts[0].created_at).getFullYear();
-            document.getElementById('yearText').textContent=yr+'年';yh.style.opacity='1';
+            document.getElementById('yearText').textContent=yr;yh.style.opacity='1';
             posts.forEach(function(p){
-                var d=new Date(p.created_at);var prof=p.profiles||{};
+                var d=new Date(p.created_at);
                 var el=document.createElement('div');el.className='forum-post';
-                el.innerHTML='<div class="forum-post-date"><span class="month">'+(d.getMonth()+1)+'</span><span class="day">'+d.getDate()+'</span></div>'+
-                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div>'+
-                '<div class="forum-post-preview">'+(p.content||'').slice(0,100)+(p.content&&p.content.length>100?'...':'')+'</div>'+
-                '<div class="forum-post-full">'+(p.content||'').replace(/\n/g,'<br>')+'</div>'+
-                '<div class="forum-author">'+(prof.avatar_url?'<img src="'+prof.avatar_url+'" />':'')+'<span>'+(prof.nickname||prof.username||'用户')+'</span>'+
-                (prof.member_id?'<span style="opacity:0.5">#'+prof.member_id+'</span>':'')+'</div>'+
-                '<div class="forum-post-meta"><span>'+(p.weather||'')+'</span></div></div>';
-                el.addEventListener('click',function(){el.classList.toggle('expanded')});
-                list.appendChild(el);el.dataset.year=d.getFullYear();
+                el.style.cursor='pointer';
+                el.addEventListener('click',function(){window.location.href='post.html?id='+p.id});
+                el.innerHTML='<div class="forum-post-date"><span class="month">'+(d.getMonth()+1)+'月</span><span class="day">'+d.getDate()+'日</span></div>'+
+                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div></div>';
+                list.appendChild(el);
             });
         }
         renderPager();

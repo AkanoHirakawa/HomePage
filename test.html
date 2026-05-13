@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Supabase Test</title>
+<script src="supabase-client.js"></script></head>
+<body style="background:#111;color:#fff;font-family:monospace;padding:20px">
+<h2>Supabase Diagnostic Test</h2>
+<pre id="log"></pre>
+<script>
+var log = document.getElementById('log');
+function L(msg) { log.textContent += msg + '\n'; console.log(msg); }
+
+var supabase = window.supabase.createClient(
+    'https://izhojeyadxffzxukgonj.supabase.co',
+    'sb_publishable_a8AxM59ZlHD3B4KUbD8wFA_PWzoeEPL'
+);
+
+L('1. Testing forum_posts table...');
+supabase.from('forum_posts').select('*').order('created_at',{ascending:false}).limit(3).then(function(r){
+    L('Forum posts query:');
+    L('  data: ' + JSON.stringify(r.data));
+    L('  error: ' + JSON.stringify(r.error));
+    L('  status: ' + r.status);
+    L('  count: ' + (r.data ? r.data.length : 'N/A'));
+    
+    L('');
+    L('2. Testing profiles table...');
+    return supabase.from('profiles').select('*').limit(3);
+}).then(function(r){
+    L('Profiles query:');
+    L('  data: ' + JSON.stringify(r.data));
+    L('  error: ' + JSON.stringify(r.error));
+    
+    L('');
+    L('3. Testing auth session...');
+    return supabase.auth.getSession();
+}).then(function(r){
+    L('Session:');
+    L('  has session: ' + !!(r.data && r.data.session));
+    L('  user email: ' + (r.data && r.data.session ? r.data.session.user.email : 'none'));
+    
+    L('');
+    L('4. Creating test post...');
+    if (r.data && r.data.session) {
+        return supabase.from('forum_posts').insert({
+            user_id: r.data.session.user.id,
+            title: 'Test Post ' + Date.now(),
+            content: 'This is a test post created from diagnostic tool.',
+            is_public: true
+        });
+    } else {
+        L('  SKIP: not logged in');
+        return Promise.resolve(null);
+    }
+}).then(function(r){
+    if (r) {
+        L('Post creation:');
+        L('  data: ' + JSON.stringify(r.data));
+        L('  error: ' + JSON.stringify(r.error));
+        if (r.error) {
+            L('  ERROR DETAILS: ' + r.error.message + ' code=' + r.error.code);
+        }
+    }
+    L('');
+    L('5. Re-reading forum posts...');
+    return supabase.from('forum_posts').select('*').order('created_at',{ascending:false}).limit(3);
+}).then(function(r){
+    L('After insert - forum posts:');
+    L('  data: ' + JSON.stringify(r.data));
+    L('  count: ' + (r.data ? r.data.length : 'N/A'));
+    L('');
+    L('=== DIAGNOSTIC COMPLETE ===');
+});
+</script>
+</body></html>

@@ -1,5 +1,5 @@
 var SUPABASE_URL = 'https://izhojeyadxffzxukgonj.supabase.co';
-var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6aG9qZXlhZHhmZnp4dWtnb25qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDAzNDgsImV4cCI6MjA5NDE3NjM0OH0.vvE-vd9Om0vl9BtJFpNCUagNOPvE8abfyJyfg2e_vZs';
+var SUPABASE_KEY = 'sb_publishable_a8AxM59ZlHD3B4KUbD8wFA_PWzoeEPL';
 
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var currentSession = null;
@@ -15,37 +15,22 @@ supabase.auth.onAuthStateChange(function (event, session) {
     updateUserUI();
 });
 
-// 尝试恢复 session
 supabase.auth.getSession().then(function (r) {
-    if (r.data && r.data.session) {
-        currentSession = r.data.session;
-    }
+    if (r.data && r.data.session) currentSession = r.data.session;
     updateUserUI();
 });
 
-window.getProfile = function () {
-    if (!currentSession) return Promise.resolve(null);
-    return supabase.from('profiles').select('*').eq('id', currentSession.user.id).single()
-        .then(function (r) { return r.data; })
-        .catch(function () { return null; });
-};
-
-window.getSession = function () {
-    return currentSession;
-};
-
-window.isLogged = function () {
-    return !!currentSession || !!localStorage.getItem('akano_auth_email');
-};
+window.getSession = function () { return currentSession; };
+window.isLogged = function () { return !!currentSession || !!localStorage.getItem('akano_auth_email'); };
 
 window.signUpEmail = function (email, password, username) {
     return supabase.auth.signUp({ email: email, password: password }).then(function (r) {
         if (r.data && r.data.user) {
             return supabase.from('profiles').upsert({
                 id: r.data.user.id, username: username, nickname: username
-            }).then(function () { return { ok: true, user: r.data.user }; });
+            }).then(function () { return { ok: true }; });
         }
-        return { ok: false, error: (r.error && r.error.message) || '注册失败' };
+        return { ok: false, error: (r.error && r.error.message) || 'reg failed' };
     });
 };
 
@@ -54,54 +39,67 @@ window.signInEmail = function (email, password) {
         if (r.data && r.data.user) {
             return supabase.auth.getSession().then(function (sr) {
                 currentSession = sr.data && sr.data.session;
-                return { ok: true, user: r.data.user };
+                return { ok: true };
             });
         }
-        return { ok: false, error: (r.error && r.error.message) || '登录失败' };
+        return { ok: false, error: (r.error && r.error.message) || 'login failed' };
     });
 };
 
-window.signOutAll = function () {
-    return supabase.auth.signOut();
+window.signOutAll = function () { return supabase.auth.signOut(); };
+
+function ensureSession() {
+    if (currentSession) return Promise.resolve(currentSession);
+    return supabase.auth.getSession().then(function (r) {
+        currentSession = r.data && r.data.session;
+        return currentSession;
+    });
+}
+
+window.getProfile = function () {
+    return ensureSession().then(function (s) {
+        if (!s) return null;
+        return supabase.from('profiles').select('*').eq('id', s.user.id).single().then(function (r) { return r.data; });
+    });
 };
 
 window.updateProfile = function (data) {
-    if (!currentSession) return Promise.reject('未登录');
-    return supabase.from('profiles').update(data).eq('id', currentSession.user.id);
+    return ensureSession().then(function (s) {
+        if (!s) throw new Error('not logged in');
+        return supabase.from('profiles').update(data).eq('id', s.user.id);
+    });
 };
 
 window.uploadAvatar = function (file) {
-    if (!currentSession) return Promise.reject('未登录');
-    var ext = file.name.split('.').pop();
-    var path = currentSession.user.id + '/avatar.' + ext;
-    return supabase.storage.from('avatars').upload(path, file, { upsert: true }).then(function (r) {
-        if (r.error) throw r.error;
-        var url = SUPABASE_URL + '/storage/v1/object/public/avatars/' + path;
-        return supabase.from('profiles').update({ avatar_url: url }).eq('id', currentSession.user.id).then(function () {
-            return url;
+    return ensureSession().then(function (s) {
+        if (!s) throw new Error('not logged in');
+        var ext = file.name.split('.').pop();
+        var path = s.user.id + '/avatar.' + ext;
+        return supabase.storage.from('avatars').upload(path, file, { upsert: true }).then(function (r) {
+            if (r.error) throw r.error;
+            var url = SUPABASE_URL + '/storage/v1/object/public/avatars/' + path;
+            return supabase.from('profiles').update({ avatar_url: url }).eq('id', s.user.id).then(function () { return url; });
         });
     });
 };
 
 window.uploadFile = function (file, isPublic) {
-    if (!currentSession) return Promise.reject('未登录');
-    var path = currentSession.user.id + '/' + Date.now() + '_' + file.name;
-    return supabase.storage.from('files').upload(path, file).then(function (r) {
-        if (r.error) throw r.error;
-        return supabase.from('private_files').insert({
-            user_id: currentSession.user.id,
-            filename: file.name,
-            file_type: file.type,
-            file_size: file.size,
-            storage_path: path,
-            is_public: !!isPublic
+    return ensureSession().then(function (s) {
+        if (!s) throw new Error('not logged in');
+        var path = s.user.id + '/' + Date.now() + '_' + file.name;
+        return supabase.storage.from('files').upload(path, file).then(function (r) {
+            if (r.error) throw r.error;
+            return supabase.from('private_files').insert({
+                user_id: s.user.id, filename: file.name, file_type: file.type,
+                file_size: file.size, storage_path: path, is_public: !!isPublic
+            });
         });
     });
 };
 
 window.listFiles = function (userId) {
-    return supabase.from('private_files').select('*').eq('user_id', userId || '')
-        .order('created_at', { ascending: false });
+    var uid = userId || (currentSession ? currentSession.user.id : '');
+    return supabase.from('private_files').select('*').eq('user_id', uid).order('created_at', { ascending: false });
 };
 
 window.toggleFilePublic = function (fileId, value) {
@@ -114,29 +112,25 @@ window.deleteFile = function (fileId, storagePath) {
     });
 };
 
-window.listForumPosts = function (page, size, search) {
-    var q = supabase.from('forum_posts').select('*, profiles(username, member_id, avatar_url, nickname)', { count: 'exact' })
-        .eq('is_public', true).order('created_at', { ascending: false });
-    if (search) q = q.or('title.ilike.%' + search + '%,content.ilike.%' + search + '%');
-    var from = (page - 1) * (size || 10);
-    var to = from + (size || 10) - 1;
-    return q.range(from, to);
+window.listForumPosts = function () {
+    return supabase.from('forum_posts').select('*').eq('is_public', true).order('created_at', { ascending: false }).limit(20);
 };
 
 window.createForumPost = function (title, content, isPublic, weather) {
-    if (!currentSession) return Promise.reject('未登录');
-    return supabase.from('forum_posts').insert({
-        user_id: currentSession.user.id,
-        title: title, content: content,
-        is_public: !!isPublic, weather: weather || ''
+    return ensureSession().then(function (s) {
+        if (!s) throw new Error('not logged in');
+        return supabase.from('forum_posts').insert({
+            user_id: s.user.id, title: title, content: content,
+            is_public: !!isPublic, weather: weather || ''
+        });
     });
 };
 
 window.getMyPosts = function () {
-    if (!currentSession) return Promise.reject('未登录');
-    return supabase.from('forum_posts').select('*')
-        .eq('user_id', currentSession.user.id)
-        .order('created_at', { ascending: false });
+    return ensureSession().then(function (s) {
+        if (!s) throw new Error('not logged in');
+        return supabase.from('forum_posts').select('*').eq('user_id', s.user.id).order('created_at', { ascending: false });
+    });
 };
 
 window.updateForumPost = function (id, data) {
@@ -147,43 +141,30 @@ window.deleteForumPost = function (id) {
     return supabase.from('forum_posts').delete().eq('id', id);
 };
 
-window.getMyPosts = function () {
-    return supabase.auth.getSession().then(function (r) {
-        var session = r.data && r.data.session;
-        if (!session) return Promise.reject('未登录');
-        return supabase.from('forum_posts').select('*')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false });
-    });
-};
-
 function updateUserUI() {
     var btn = document.getElementById('navUserBtn');
     if (!btn) return;
     if (isLogged()) {
         btn.innerHTML = '<span class="nav-avatar" id="navAvatar"></span>';
         getProfile().then(function (p) {
-            var avatar = document.getElementById('navAvatar');
-            if (avatar && p && p.avatar_url) {
-                avatar.style.backgroundImage = 'url(' + p.avatar_url + ')';
-                avatar.style.backgroundSize = 'cover';
-                avatar.textContent = '';
-            } else if (avatar) {
-                avatar.textContent = '?';
-            }
+            var av = document.getElementById('navAvatar');
+            if (av && p && p.avatar_url) {
+                av.style.backgroundImage = 'url(' + p.avatar_url + ')';
+                av.style.backgroundSize = 'cover';
+                av.textContent = '';
+            } else if (av) { av.textContent = '?'; }
         });
         btn.href = 'settings.html';
         btn.onclick = null;
     } else {
-        btn.innerHTML = '登录';
+        btn.innerHTML = 'Login';
         btn.href = '#';
-        btn.onclick = function (e) { e.preventDefault();
-            if(typeof showLoginModal==='function')showLoginModal();else window.location.href='index.html'; };
+        btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; };
     }
 }
 
-function showLoginModal() {
-    document.getElementById('loginModal').style.display = 'flex';
-}
-
+(function () {
+    var btn = document.getElementById('navUserBtn');
+    if (btn) { btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; }; }
+})();
 setTimeout(updateUserUI, 500);

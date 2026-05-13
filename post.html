@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帖子 | Akano</title>
+<link rel="stylesheet" href="style.css">
+<script src="supabase-client.js"></script>
+<script src="supabase.js"></script>
+<style>
+.post-page { max-width: 700px; margin: 0 auto; padding: 140px 24px 60px; }
+.post-card { padding: 30px; border-radius: 18px; backdrop-filter: blur(20px);
+    background: var(--glass-bg); border: 1px solid var(--glass-border); }
+.post-card h1 { font-size: 1.6rem; margin-bottom: 12px; color: var(--white); }
+.post-meta { font-size: 0.85rem; color: var(--white-tertiary); margin-bottom: 20px; }
+.post-content { font-size: 1rem; color: var(--white-secondary); line-height: 1.8; white-space: pre-wrap; }
+.back-link { display: inline-block; margin-top: 24px; color: var(--orange-primary); text-decoration: none; font-size: 0.9rem; }
+@media (max-width: 768px) { .post-page { padding: 120px 16px 30px; } }
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><div class="loading-text">loading...</div></div>
+<div class="starfield" id="starfield"></div>
+<div class="nebula"></div>
+<canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+<nav class="navbar">
+    <div class="logo">帖子</div>
+    <ul class="nav-links" style="display:flex">
+        <li><a href="index.html" class="nav-link">主页</a></li>
+        <li><a href="forum.html" class="nav-link">论坛</a></li>
+    </ul>
+</nav>
+<div class="post-page" id="postPage">
+    <div class="post-card" id="postCard">
+        <h1 id="postTitle"></h1>
+        <div class="post-meta" id="postMeta"></div>
+        <div class="post-content" id="postContent"></div>
+        <a href="forum.html" class="back-link">返回论坛</a>
+    </div>
+</div>
+<script src="script.js"></script>
+<script>
+var id = new URLSearchParams(window.location.search).get('id');
+if(id){
+    supabase.from('forum_posts').select('*').eq('id',id).single().then(function(r){
+        var p = r.data;
+        if(p){
+            document.getElementById('postTitle').textContent = p.title;
+            var d = new Date(p.created_at);
+            document.getElementById('postMeta').textContent = (d.getMonth()+1)+'月'+d.getDate()+'日 '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+            document.getElementById('postContent').textContent = p.content;
+        }
+    });
+}
+setTimeout(function(){document.getElementById('loading').classList.add('fade-out')},600);
+</script>
+</body>
+</html>

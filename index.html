@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akano 赤野 | 个人主页</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <script src="supabase.js"></script>
 </head>
 <body>
@@ -27,8 +27,8 @@
             <li><a href="#about" class="nav-link">关于我</a></li>
             <li><a href="#interests" class="nav-link">兴趣</a></li>
             <li><a href="#studio" class="nav-link">工作室</a></li>
-            <li><a href="forum.html" class="nav-link nav-btn">论坛</a></li>
-            <li><a href="storage.html" class="nav-link nav-btn">资料站</a></li>
+            <li><a href="#forum-section" class="nav-link nav-btn">论坛</a></li>
+            <li><a href="#storage-section" class="nav-link nav-btn">资料库</a></li>
             <li><a href="#contact" class="nav-link">联系</a></li>
         </ul>
         <a class="nav-user" id="navUserBtn" href="#">登录</a>
@@ -134,6 +134,28 @@
                     <p>待施工</p>
                     <p>待施工</p>
                     <p>待施工</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="forum-section" class="content-section">
+            <h2 class="section-title">论坛</h2>
+            <div class="cards-grid">
+                <div class="glass-card" style="text-align:center">
+                    <h3>社区论坛</h3>
+                    <p>分享想法，参与讨论</p>
+                    <a href="forum.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px;margin-top:12px">进入论坛</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="storage-section" class="content-section">
+            <h2 class="section-title">资料库</h2>
+            <div class="cards-grid">
+                <div class="glass-card" style="text-align:center">
+                    <h3>文件仓库</h3>
+                    <p>上传管理代码、文本、图片等文件</p>
+                    <a href="storage.html" class="login-btn" style="display:inline-block;text-decoration:none;padding:12px 32px;margin-top:12px">进入资料库</a>
                 </div>
             </div>
         </section>

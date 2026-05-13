@@ -1024,5 +1024,9 @@ body {
     .nav-user { padding: 6px 14px; font-size: 0.8rem; }
 }
 
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-4px)} }
+.shake { animation: shake 0.4s ease; }
+input.error { border-color: var(--orange-primary) !important; box-shadow: 0 0 10px rgba(255,107,53,0.4) !important; }
+
 
 
