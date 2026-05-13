@@ -209,7 +209,7 @@
                 <h2>登录</h2>
                 <div class="login-field"><span class="field-icon">邮箱</span><input type="email" id="loginEmail" placeholder="邮箱" /></div>
                 <div class="login-field"><span class="field-icon">密码</span><input type="password" id="loginPass" placeholder="密码" /></div>
-                <button class="login-btn" id="loginBtn">登录</button>
+                <button class="login-btn" id="loginBtn" onclick="doSiteLogin()">登录</button>
                 <p class="login-error" id="loginError"></p>
             </div>
             <div class="auth-panel" id="registerPanel">
@@ -218,7 +218,7 @@
                 <div class="login-field"><span class="field-icon">邮箱</span><input type="email" id="regEmail" placeholder="邮箱" /></div>
                 <div class="login-field"><span class="field-icon">密码</span><input type="password" id="regPass" placeholder="密码（至少6位）" /></div>
                 <div class="login-field"><span class="field-icon">确认</span><input type="password" id="regConfirm" placeholder="确认密码" /></div>
-                <button class="login-btn" id="registerBtn">注册</button>
+                <button class="login-btn" id="registerBtn" onclick="doSiteRegister()">注册</button>
                 <p class="login-error" id="regError"></p>
                 <p class="login-success" id="regSuccess"></p>
             </div>
@@ -286,40 +286,37 @@
     });
 
     // ===== Show/Hide Login Modal =====
-    window.showLoginModal = function(){
-        document.getElementById('loginModal').style.display='flex';
-    };
-    document.getElementById('loginModal').addEventListener('click',function(e){
-        if(e.target===this){this.style.display='none';}
-    });
+    window.showLoginModal = function(){document.getElementById('loginModal').style.display='flex';};
+    document.getElementById('loginModal').addEventListener('click',function(e){if(e.target===this)this.style.display='none'});
 
     // ===== Login =====
-    document.getElementById('loginBtn').addEventListener('click',function(){
+    function doSiteLogin(){
+        document.getElementById('loginError').textContent='';
         var e=document.getElementById('loginEmail').value.trim();
         var p=document.getElementById('loginPass').value;
-        if(!e){document.getElementById('loginError').textContent='请输入邮箱';return;}
-        if(!p){document.getElementById('loginError').textContent='请输入密码';return;}
+        if(!e){document.getElementById('loginError').textContent='enter email';return;}
+        if(!p){document.getElementById('loginError').textContent='enter password';return;}
         signInEmail(e,p).then(function(r){
             if(r.ok){document.getElementById('loginModal').style.display='none';
                 document.getElementById('loginEmail').value='';document.getElementById('loginPass').value='';}
             else document.getElementById('loginError').textContent=r.error;
         });
-    });
-    document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click();});
+    }
+    document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doSiteLogin();});
 
     // ===== Register =====
-    document.getElementById('registerBtn').addEventListener('click',function(){
+    function doSiteRegister(){
         var u=document.getElementById('regUser').value.trim();
         var e=document.getElementById('regEmail').value.trim();
         var p=document.getElementById('regPass').value;
         var c=document.getElementById('regConfirm').value;
         var re=document.getElementById('regError');re.textContent='';
-        if(!u){re.textContent='请输入用户名';return;}
-        if(!e){re.textContent='请输入邮箱';return;}
-        if(p.length<6){re.textContent='密码至少6位';return;}
-        if(p!==c){re.textContent='两次密码不一致';return;}
+        if(!u){re.textContent='enter username';return;}
+        if(!e){re.textContent='enter email';return;}
+        if(p.length<6){re.textContent='password min 6 chars';return;}
+        if(p!==c){re.textContent='passwords dont match';return;}
         signUpEmail(e,p,u).then(function(r){
-            if(r.ok){document.getElementById('regSuccess').textContent='注册成功！检查邮箱验证链接';
+            if(r.ok){document.getElementById('regSuccess').textContent='注册成功';
                 setTimeout(function(){
                     document.querySelector('.auth-tab[data-tab="login"]').click();
                     document.getElementById('loginEmail').value=e;
@@ -327,7 +324,7 @@
                 },2000);}
             else re.textContent=r.error;
         });
-    });
+    }
     </script>
 </body>
 </html>

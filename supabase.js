@@ -1,6 +1,10 @@
 var SUPABASE_URL = 'https://izhojeyadxffzxukgonj.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_a8AxM59ZlHD3B4KUbD8wFA_PWzoeEPL';
 
+if (!window.supabase) {
+    alert('Supabase SDK failed to load. Please check supabase-client.js exists.');
+    throw new Error('supabase not loaded');
+}
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var currentSession = null;
 
@@ -190,12 +194,17 @@ function updateUserUI() {
         btn.onmouseleave = null;
         var dd = document.getElementById('userDropdown');
         if (dd) dd.style.display = 'none';
-        btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; };
+        btn.onclick = function (e) { e.preventDefault();
+            if(typeof showLoginModal==='function') showLoginModal();
+            else if(window.location.pathname.indexOf('index.html')<0) window.location.href='index.html';
+        };
     }
 }
 
 (function () {
     var btn = document.getElementById('navUserBtn');
-    if (btn) { btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; }; }
+    if (btn && window.location.pathname.indexOf('index.html') < 0) {
+        btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; };
+    }
 })();
 setTimeout(updateUserUI, 500);
