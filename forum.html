@@ -75,6 +75,15 @@
 </style>
 </head>
 <body>
+<div class="login-gate" id="loginGate" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:30000;background:rgba(0,0,0,0.82);justify-content:center;align-items:center;backdrop-filter:blur(10px)">
+<div style="background:rgba(20,20,20,0.9);border:1px solid rgba(255,255,255,0.13);border-radius:20px;padding:36px;min-width:320px;text-align:center;backdrop-filter:blur(30px)">
+<h2 style="margin-bottom:16px;color:#fff">登录论坛</h2>
+<input type="email" id="gateEmail" placeholder="邮箱" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.13);background:rgba(255,255,255,0.06);color:#fff;margin-bottom:10px;outline:none;box-sizing:border-box" />
+<input type="password" id="gatePass" placeholder="密码" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.13);background:rgba(255,255,255,0.06);color:#fff;margin-bottom:12px;outline:none;box-sizing:border-box" />
+<button id="gateLogin" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--orange-primary),var(--orange-secondary));color:#fff;font-size:1rem;font-weight:600;cursor:pointer">登录</button>
+<p id="gateErr" style="color:#f66;font-size:0.8rem;margin-top:8px;min-height:18px"></p>
+<p style="color:rgba(255,255,255,0.4);font-size:0.8rem;margin-top:10px">没有账号？<a href="index.html" style="color:var(--orange-primary)">去主页注册</a></p>
+</div></div>
 <div class="loading" id="loading"><div class="loading-text">加载论坛...</div></div>
 <div class="starfield" id="starfield"></div>
 <div class="nebula"></div>
@@ -117,6 +126,20 @@
 
 <script src="script.js"></script>
 <script>
+var lg=document.getElementById('loginGate');
+setTimeout(function(){if(!isLogged()){lg.style.display='flex'}else{lg.style.display='none'}},800);
+
+document.getElementById('gateLogin').addEventListener('click',function(){
+    var e=document.getElementById('gateEmail').value.trim();
+    var p=document.getElementById('gatePass').value;
+    if(!e||!p)return;
+    signInEmail(e,p).then(function(r){
+        if(r.ok){lg.style.display='none'}
+        else document.getElementById('gateErr').textContent=r.error;
+    }).catch(function(err){document.getElementById('gateErr').textContent='network error'});
+});
+document.getElementById('gatePass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('gateLogin').click()});
+
 var PAGE = 1, SIZE = 10, TOTAL = 0;
 var w = document.getElementById('writeModal');
 document.getElementById('writeBtn').addEventListener('click',function(){

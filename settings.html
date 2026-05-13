@@ -74,8 +74,8 @@
     <div class="settings-section">
         <h3>个人资料</h3>
         <div class="avatar-area">
-            <div class="avatar-preview" id="avatarPreview"></div>
-            <div class="avatar-upload"><label for="avatarInput">更换头像</label><input type="file" id="avatarInput" accept="image/*" /></div>
+            <div class="avatar-preview" id="avatarPreview" style="cursor:pointer" title="点击查看大图"></div>
+            <div class="avatar-upload"><label for="avatarInput">更换头像(PNG/JPG)</label><input type="file" id="avatarInput" accept="image/*" /></div>
         </div>
         <div class="profile-field"><span class="label">ID</span><span class="member-badge" id="memberId">-----</span></div>
         <div class="profile-field"><span class="label">昵称</span><input type="text" id="editNick" maxlength="20" /></div>
@@ -98,14 +98,16 @@
 
 <script src="script.js"></script>
 <script>
-if(!isLogged()){document.getElementById('authGate').classList.remove('hidden');document.getElementById('settingsPage').style.display='none'}
-else document.getElementById('authGate').classList.add('hidden');
+setTimeout(function(){
+    if(!isLogged()){document.getElementById('authGate').classList.remove('hidden');document.getElementById('settingsPage').style.display='none'}
+    else document.getElementById('authGate').classList.add('hidden');
+},800);
 
 function loadProfile(){
     getProfile().then(function(p){
         if(!p)return;
         var av=document.getElementById('avatarPreview');
-        if(p.avatar_url)av.innerHTML='<img src="'+p.avatar_url+'" />';else av.textContent='?';
+        if(p.avatar_url){av.innerHTML='<img src="'+p.avatar_url+'" />';av.addEventListener('dblclick',function(){window.open(p.avatar_url,'_blank')})}else av.textContent='?';
         document.getElementById('memberId').textContent=p.member_id||'-----';
         document.getElementById('editNick').value=p.nickname||'';
         document.getElementById('editBio').value=p.bio||'';

@@ -21,7 +21,7 @@ supabase.auth.getSession().then(function (r) {
 });
 
 window.getSession = function () { return currentSession; };
-window.isLogged = function () { return !!currentSession || !!localStorage.getItem('akano_auth_email'); };
+window.isLogged = function () { return !!currentSession; };
 
 window.signUpEmail = function (email, password, username) {
     return supabase.auth.signUp({ email: email, password: password }).then(function (r) {
@@ -145,20 +145,51 @@ function updateUserUI() {
     var btn = document.getElementById('navUserBtn');
     if (!btn) return;
     if (isLogged()) {
-        btn.innerHTML = '<span class="nav-avatar" id="navAvatar"></span>';
+        // Create avatar + dropdown
+        btn.innerHTML = '<span class="nav-avatar" id="navAvatar"></span><div class="nav-user-dropdown" id="userDropdown" style="display:none"></div>';
+        btn.href = 'javascript:void(0)';
+        btn.style.position = 'relative';
+        var dd = document.getElementById('userDropdown');
+        dd.innerHTML = '';
         getProfile().then(function (p) {
-            var av = document.getElementById('navAvatar');
-            if (av && p && p.avatar_url) {
-                av.style.backgroundImage = 'url(' + p.avatar_url + ')';
-                av.style.backgroundSize = 'cover';
-                av.textContent = '';
-            } else if (av) { av.textContent = '?'; }
+            var avatar = document.getElementById('navAvatar');
+            if (avatar && p && p.avatar_url) {
+                avatar.style.backgroundImage = 'url(' + p.avatar_url + ')';
+                avatar.style.backgroundSize = 'cover';
+                avatar.textContent = '';
+            } else if (avatar) { avatar.textContent = '?'; }
+            if (p && p.member_id) {
+                var idLink = document.createElement('a');
+                idLink.href = 'settings.html';
+                idLink.textContent = 'ID: ' + p.member_id;
+                dd.appendChild(idLink);
+            }
+            var setLink = document.createElement('a');
+            setLink.href = 'settings.html';
+            setLink.textContent = 'Settings';
+            dd.appendChild(setLink);
+            var logoutLink = document.createElement('a');
+            logoutLink.href = 'javascript:void(0)';
+            logoutLink.textContent = 'Logout';
+            logoutLink.addEventListener('click', function () {
+                signOutAll().then(function () {
+                    currentSession = null;
+                    localStorage.removeItem('akano_auth_email');
+                    location.reload();
+                });
+            });
+            dd.appendChild(logoutLink);
         });
-        btn.href = 'settings.html';
-        btn.onclick = null;
+        btn.onmouseenter = function () { dd.style.display = 'block'; };
+        btn.onmouseleave = function () { dd.style.display = 'none'; };
     } else {
         btn.innerHTML = 'Login';
         btn.href = '#';
+        btn.style.position = '';
+        btn.onmouseenter = null;
+        btn.onmouseleave = null;
+        var dd = document.getElementById('userDropdown');
+        if (dd) dd.style.display = 'none';
         btn.onclick = function (e) { e.preventDefault(); window.location.href = 'index.html'; };
     }
 }

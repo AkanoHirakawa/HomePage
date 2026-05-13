@@ -78,8 +78,10 @@
 
 <script src="script.js"></script>
 <script>
-if(!isLogged()){document.getElementById('authGate').classList.remove('hidden');document.getElementById('storagePage').style.display='none'}
-else document.getElementById('authGate').classList.add('hidden');
+setTimeout(function(){
+    if(!isLogged()){document.getElementById('authGate').classList.remove('hidden');document.getElementById('storagePage').style.display='none'}
+    else document.getElementById('authGate').classList.add('hidden');
+},800);
 
 function loadFiles(){
     var session = getSession();

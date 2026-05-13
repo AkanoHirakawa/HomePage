@@ -1014,11 +1014,11 @@ body {
     background: rgba(255,107,53,0.2); text-align: center; line-height: 32px;
     font-size: 0.9rem; color: var(--orange-primary); font-weight: 600;
 }
-.nav-user-dropdown { display: none; position: absolute; right: 30px; top: calc(var(--header-height) - 10px);
+.nav-user-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
     background: rgba(20,20,20,0.95); border: 1px solid var(--glass-border); border-radius: 14px;
-    padding: 8px; min-width: 140px; backdrop-filter: blur(20px); }
+    padding: 8px; min-width: 140px; backdrop-filter: blur(20px); z-index: 1001; }
 .nav-user-dropdown a { display: block; padding: 10px 16px; border-radius: 10px; color: var(--white);
-    text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
+    text-decoration: none; font-size: 0.9rem; transition: 0.2s; white-space: nowrap; }
 .nav-user-dropdown a:hover { background: rgba(255,107,53,0.1); }
 @media (max-width: 768px) {
     .nav-user { padding: 6px 14px; font-size: 0.8rem; }
