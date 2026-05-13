@@ -113,7 +113,7 @@ window.deleteFile = function (fileId, storagePath) {
 };
 
 window.listForumPosts = function () {
-    return supabase.from('forum_posts').select('*').eq('is_public', true).order('created_at', { ascending: false }).limit(20);
+    return supabase.from('forum_posts').select('*, profiles(username, member_id, nickname)').eq('is_public', true).order('created_at', { ascending: false }).limit(20);
 };
 
 window.createForumPost = function (title, content, isPublic, weather) {

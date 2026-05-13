@@ -40,6 +40,12 @@
 .forum-post-full { display: none; margin-top: 12px; font-size: 0.95rem; color: var(--white-secondary); line-height: 1.8; }
 .forum-post.expanded .forum-post-full { display: block; }
 .forum-post-meta { font-size: 0.75rem; color: var(--white-tertiary); margin-top: 8px; display: flex; gap: 12px; align-items: center; }
+.forum-post-author { font-size: 0.78rem; color: var(--white-tertiary); font-weight: 300; margin-top: 4px; }
+.post-del-btn { display: none; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: rgba(200,50,50,0.15); border: 1px solid rgba(200,50,50,0.3); color: #f66;
+    border-radius: 8px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; z-index: 2; }
+.post-del-btn:hover { background: rgba(200,50,50,0.3); }
+.forum-post:hover .post-del-btn { display: block; }
 .forum-author { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--white-tertiary); margin-top: 4px; }
 .forum-author img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 .forum-pager { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 32px; padding-bottom: 40px; }
@@ -177,12 +183,24 @@ function loadPosts(){
             document.getElementById('yearText').textContent=yr;yh.style.opacity='1';
             posts.forEach(function(p){
                 var d=new Date(p.created_at);
+                var prof=p.profiles||{};
+                var author=prof.nickname||prof.username||'';
+                if(author.indexOf('@')>0)author=author.split('@')[0];
+                if(!author)author='匿名';
+                var mid=prof.member_id||'';
                 var el=document.createElement('div');el.className='forum-post';
-                el.style.cursor='pointer';
+                el.style.cursor='pointer';el.style.position='relative';
                 el.addEventListener('click',function(){window.location.href='post.html?id='+p.id});
                 el.innerHTML='<div class="forum-post-date"><span class="month">'+(d.getMonth()+1)+'月</span><span class="day">'+d.getDate()+'日</span></div>'+
-                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div></div>';
+                '<div class="forum-post-body"><div class="forum-post-title">'+p.title+'</div>'+
+                '<div class="forum-post-author">'+author+(mid?'  ID '+mid:'')+'</div></div>'+
+                '<button class="post-del-btn" data-id="'+p.id+'">X</button>';
                 list.appendChild(el);
+                el.querySelector('.post-del-btn').addEventListener('click',function(e){
+                    e.stopPropagation();
+                    if(!confirm('Delete?'))return;
+                    deleteForumPost(p.id).then(function(){loadPosts();});
+                });
             });
         }
         renderPager();

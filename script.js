@@ -306,16 +306,23 @@ function updateLunarDate(date) {
 }
 
 function getWeather() {
-    var lat = 23.1291;
-    var lon = 113.2644;
+    var cached = localStorage.getItem('akano_location');
+    if (cached) {
+        var parts = cached.split(',');
+        fetchWeather(parseFloat(parts[0]), parseFloat(parts[1]));
+        return;
+    }
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            function (pos) { fetchWeather(pos.coords.latitude, pos.coords.longitude); },
-            function () { fetchWeather(lat, lon); },
-            { timeout: 3000, maximumAge: 600000 }
+            function (pos) {
+                localStorage.setItem('akano_location', pos.coords.latitude + ',' + pos.coords.longitude);
+                fetchWeather(pos.coords.latitude, pos.coords.longitude);
+            },
+            function () { fetchWeather(23.1291, 113.2644); },
+            { timeout: 3000 }
         );
     } else {
-        fetchWeather(lat, lon);
+        fetchWeather(23.1291, 113.2644);
     }
 }
 
